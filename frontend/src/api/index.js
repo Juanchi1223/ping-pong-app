@@ -25,4 +25,5 @@ export const api = {
   getPlayerMatches: (id) => request(`/matches/player/${id}`),
   getH2H: (id1, id2) => request(`/matches/h2h/${id1}/${id2}`),
   createMatch: (data) => request('/matches', { method: 'POST', body: JSON.stringify(data) }),
+  deleteMatch: (id) => request(`/matches/${id}`, { method: 'DELETE' }),
 };

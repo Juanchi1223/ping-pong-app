@@ -8,13 +8,27 @@ export default function PlayerProfile() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
-  useEffect(() => {
-    Promise.all([api.getPlayer(id), api.getPlayerMatches(id)])
-      .then(([p, m]) => { setPlayer(p); setMatches(m); })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const load = () => Promise.all([api.getPlayer(id), api.getPlayerMatches(id)])
+    .then(([p, m]) => { setPlayer(p); setMatches(m); })
+    .catch(e => setError(e.message))
+    .finally(() => setLoading(false));
+
+  useEffect(() => { load(); }, [id]);
+
+  const handleDeleteMatch = async (matchId) => {
+    if (!confirm('¿Borrar este partido? Se revertirán los cambios de MMR y estadísticas.')) return;
+    setDeletingId(matchId);
+    try {
+      await api.deleteMatch(matchId);
+      await load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) return <PageLoader />;
   if (error || !player) return <PageError message={error || 'Player not found'} />;
@@ -97,6 +111,7 @@ export default function PlayerProfile() {
                   <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Score</th>
                   <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Result</th>
                   <th className="text-right px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR Δ</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -112,7 +127,7 @@ export default function PlayerProfile() {
                   return (
                     <tr
                       key={m.id}
-                      className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors table-row-anim"
+                      className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors table-row-anim group"
                       style={{ animationDelay: `${i * 25}ms` }}
                     >
                       <td className="px-5 py-3.5 text-white/30 text-xs font-mono">
@@ -136,6 +151,15 @@ export default function PlayerProfile() {
                         <span className={`font-mono text-sm font-medium ${myDelta > 0 ? 'text-accent' : 'text-loss'}`}>
                           {myDelta > 0 ? '+' : ''}{myDelta}
                         </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          onClick={() => handleDeleteMatch(m.id)}
+                          disabled={deletingId === m.id}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity btn-danger px-2 py-1 text-[11px] disabled:opacity-30"
+                        >
+                          {deletingId === m.id ? '...' : '✕'}
+                        </button>
                       </td>
                     </tr>
                   );

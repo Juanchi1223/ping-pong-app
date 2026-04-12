@@ -133,4 +133,74 @@ router.post('/', async (req, res) => {
   }
 });
 
+// DELETE a match and reverse all player stats
+router.delete('/:id', async (req, res) => {
+  try {
+    const match = await db('matches').where({ id: req.params.id }).first();
+    if (!match) return res.status(404).json({ error: 'Match not found' });
+
+    const [playerA, playerB] = await Promise.all([
+      db('players').where({ id: match.player_a_id }).first(),
+      db('players').where({ id: match.player_b_id }).first(),
+    ]);
+
+    const aWon = match.score_a > match.score_b;
+
+    await db.transaction(async (trx) => {
+      await trx('matches').where({ id: req.params.id }).delete();
+
+      await trx('players').where({ id: match.player_a_id }).update({
+        mmr: playerA.mmr - match.mmr_delta_a,
+        wins: playerA.wins - (aWon ? 1 : 0),
+        losses: playerA.losses - (aWon ? 0 : 1),
+        points_scored: playerA.points_scored - match.score_a,
+        points_conceded: playerA.points_conceded - match.score_b,
+      });
+
+      await trx('players').where({ id: match.player_b_id }).update({
+        mmr: playerB.mmr - match.mmr_delta_b,
+        wins: playerB.wins - (aWon ? 0 : 1),
+        losses: playerB.losses - (aWon ? 1 : 0),
+        points_scored: playerB.points_scored - match.score_b,
+        points_conceded: playerB.points_conceded - match.score_a,
+      });
+
+      // Recalculate streaks for both players from remaining matches
+      const [streakA, streakB] = await Promise.all([
+        recalculateStreak(trx, match.player_a_id),
+        recalculateStreak(trx, match.player_b_id),
+      ]);
+
+      await trx('players').where({ id: match.player_a_id }).update(streakA);
+      await trx('players').where({ id: match.player_b_id }).update(streakB);
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function recalculateStreak(trx, playerId) {
+  const matches = await trx('matches')
+    .where(function () { this.where('player_a_id', playerId).orWhere('player_b_id', playerId); })
+    .orderBy('played_at', 'desc');
+
+  let current_win_streak = 0, current_loss_streak = 0;
+  for (const m of matches) {
+    const won = (m.player_a_id === playerId && m.score_a > m.score_b) ||
+                (m.player_b_id === playerId && m.score_b > m.score_a);
+    if (current_win_streak === 0 && current_loss_streak === 0) {
+      if (won) current_win_streak = 1; else current_loss_streak = 1;
+    } else if (current_win_streak > 0 && won) {
+      current_win_streak++;
+    } else if (current_loss_streak > 0 && !won) {
+      current_loss_streak++;
+    } else {
+      break;
+    }
+  }
+  return { current_win_streak, current_loss_streak };
+}
+
 module.exports = router;
