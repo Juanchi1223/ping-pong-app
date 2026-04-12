@@ -1,17 +1,25 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 
 const navItems = [
   { to: '/', label: 'Rankings', icon: TrophyIcon, exact: true },
   { to: '/register', label: 'New Match', icon: PlusIcon },
   { to: '/players', label: 'Players', icon: UsersIcon },
-  { to: '/h2h', label: 'Head 2 Head', icon: SwordsIcon },
+  { to: '/h2h', label: 'H2H', icon: SwordsIcon },
 ];
 
 export default function Layout() {
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 flex flex-col border-r border-white/[0.06] bg-surface/60 backdrop-blur-sm">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
+      {/* Mobile header */}
+      <header className="md:hidden flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] bg-surface/80 backdrop-blur-sm flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+          <span className="text-sm">🏓</span>
+        </div>
+        <div className="font-display text-lg text-white tracking-wide leading-none">PingPongZS</div>
+      </header>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-56 flex-shrink-0 flex-col border-r border-white/[0.06] bg-surface/60 backdrop-blur-sm">
         {/* Logo */}
         <div className="px-5 py-6 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
@@ -53,11 +61,32 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
         <div className="page-enter">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-surface/95 backdrop-blur-md border-t border-white/[0.06] flex items-center justify-around px-2 py-1.5 z-50">
+        {navItems.map(({ to, label, icon: Icon, exact }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={exact}
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-body transition-all duration-150 min-w-0 ${
+                isActive
+                  ? 'text-accent'
+                  : 'text-white/35'
+              }`
+            }
+          >
+            <Icon className="w-5 h-5" />
+            <span className="truncate">{label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }
