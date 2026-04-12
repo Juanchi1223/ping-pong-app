@@ -65,7 +65,7 @@ export default function RegisterMatch() {
 
   if (saved) {
     return (
-      <div className="p-8 max-w-xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="p-4 md:p-8 max-w-xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-5xl">🏆</div>
         <div className="font-display text-3xl text-accent tracking-wide">Match Saved!</div>
         <div className="text-white/40 text-sm font-body">Redirecting to rankings...</div>
@@ -74,16 +74,16 @@ export default function RegisterMatch() {
   }
 
   return (
-    <div className="p-8 max-w-xl mx-auto">
-      <div className="mb-8">
-        <h1 className="font-display text-4xl text-white tracking-wide">New Match</h1>
+    <div className="p-4 md:p-8 max-w-xl mx-auto">
+      <div className="mb-6 md:mb-8">
+        <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">New Match</h1>
         <p className="text-white/35 text-sm font-body mt-1">Register a match result and update MMR</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Player selectors */}
         <div className="card p-5 space-y-4">
-          <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-3 sm:gap-4 items-end">
             {/* Player A */}
             <div>
               <label className="label">Player A</label>
@@ -106,7 +106,7 @@ export default function RegisterMatch() {
             </div>
 
             {/* VS */}
-            <div className="vs-divider pb-6">VS</div>
+            <div className="vs-divider hidden sm:block pb-6">VS</div>
 
             {/* Player B */}
             <div>
@@ -134,7 +134,7 @@ export default function RegisterMatch() {
         {/* Score inputs */}
         <div className="card p-5">
           <label className="label mb-4 block">Score</label>
-          <div className="grid grid-cols-[1fr,auto,1fr] gap-6 items-center">
+          <div className="grid grid-cols-[1fr,auto,1fr] gap-4 sm:gap-6 items-center">
             <div className="flex flex-col items-center gap-2">
               {playerA && <div className="text-white/40 text-xs font-body truncate max-w-full">{playerA.name}</div>}
               <div className={`relative ${winner === 'a' ? 'after:absolute after:inset-0 after:rounded after:bg-accent/5' : ''}`}>

@@ -38,7 +38,7 @@ export default function PlayerProfile() {
   const winPct = totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-white/30 text-xs font-mono mb-6">
         <Link to="/players" className="hover:text-white/60 transition-colors">Players</Link>
@@ -47,22 +47,22 @@ export default function PlayerProfile() {
       </div>
 
       {/* Player header */}
-      <div className="card p-6 mb-6">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="font-display text-4xl text-white tracking-wide">{player.name}</h1>
+      <div className="card p-4 md:p-6 mb-6">
+        <div className="flex items-start justify-between mb-5 md:mb-6 gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl md:text-4xl text-white tracking-wide truncate">{player.name}</h1>
             <div className="text-white/30 text-xs font-mono mt-1">
               Member since {new Date(player.created_at).toLocaleDateString()}
             </div>
           </div>
-          <div className="text-right">
-            <div className="mmr-display text-4xl text-accent">{player.mmr}</div>
+          <div className="text-right flex-shrink-0">
+            <div className="mmr-display text-2xl md:text-4xl text-accent">{player.mmr}</div>
             <div className="text-white/30 text-[10px] font-mono uppercase tracking-widest">MMR</div>
           </div>
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-4">
           <StatCell label="Wins" value={player.wins} color="accent" />
           <StatCell label="Losses" value={player.losses} color="loss" />
           <StatCell label="Win %" value={`${winPct}%`} />
@@ -102,16 +102,16 @@ export default function PlayerProfile() {
             <div className="text-white/30 text-sm font-body">No matches played yet</div>
           </div>
         ) : (
-          <div className="card overflow-hidden">
-            <table className="w-full">
+          <div className="card overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-0">
               <thead>
                 <tr className="border-b border-white/[0.06]">
-                  <th className="text-left px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Date</th>
-                  <th className="text-left px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Opponent</th>
-                  <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Score</th>
-                  <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Result</th>
-                  <th className="text-right px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR Δ</th>
-                  <th className="px-4 py-3" />
+                  <th className="hidden md:table-cell text-left px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Date</th>
+                  <th className="text-left px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Opponent</th>
+                  <th className="text-center px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Score</th>
+                  <th className="text-center px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Result</th>
+                  <th className="text-right px-3 md:px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR Δ</th>
+                  <th className="px-2 md:px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -130,33 +130,33 @@ export default function PlayerProfile() {
                       className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors table-row-anim group"
                       style={{ animationDelay: `${i * 25}ms` }}
                     >
-                      <td className="px-5 py-3.5 text-white/30 text-xs font-mono">
+                      <td className="hidden md:table-cell px-5 py-3.5 text-white/30 text-xs font-mono">
                         {new Date(m.played_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-3 md:px-4 py-3.5">
                         <Link to={`/players/${oppId}`} className="text-sm text-white/70 hover:text-accent transition-colors font-body">
                           {oppName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-3 md:px-4 py-3.5 text-center">
                         <span className="font-mono text-sm text-white/60">{myScore} – {oppScore}</span>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-3 md:px-4 py-3.5 text-center">
                         {won
                           ? <span className="text-xs font-mono text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">WIN</span>
                           : <span className="text-xs font-mono text-loss bg-loss/10 border border-loss/20 px-2 py-0.5 rounded">LOSS</span>
                         }
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-3 md:px-5 py-3.5 text-right">
                         <span className={`font-mono text-sm font-medium ${myDelta > 0 ? 'text-accent' : 'text-loss'}`}>
                           {myDelta > 0 ? '+' : ''}{myDelta}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-2 md:px-4 py-3.5 text-center">
                         <button
                           onClick={() => handleDeleteMatch(m.id)}
                           disabled={deletingId === m.id}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity btn-danger px-2 py-1 text-[11px] disabled:opacity-30"
+                          className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity btn-danger px-2 py-1 text-[11px] disabled:opacity-30"
                         >
                           {deletingId === m.id ? '...' : '✕'}
                         </button>
@@ -185,7 +185,7 @@ function StatCell({ label, value, color }) {
 
 function PageLoader() {
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="h-32 bg-white/[0.04] rounded-xl animate-pulse mb-6" />
       <div className="h-64 bg-white/[0.04] rounded-xl animate-pulse" />
     </div>
@@ -194,7 +194,7 @@ function PageLoader() {
 
 function PageError({ message }) {
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="card p-6 border-loss/20 bg-loss/[0.05]">
         <div className="text-loss text-sm font-mono">{message}</div>
         <Link to="/players" className="btn-ghost mt-4 inline-block text-xs">← Back to Players</Link>

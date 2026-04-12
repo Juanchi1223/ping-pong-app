@@ -40,26 +40,27 @@ export default function Players() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-display text-4xl text-white tracking-wide">Players</h1>
+      <div className="flex items-center justify-between mb-6 md:mb-8 gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">Players</h1>
           <p className="text-white/35 text-sm font-body mt-1">
             {active.length} active{inactive.length > 0 ? ` · ${inactive.length} inactive` : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           {inactive.length > 0 && (
             <button
               onClick={() => setShowInactive(v => !v)}
-              className="btn-ghost text-xs"
+              className="btn-ghost text-xs hidden sm:inline-flex"
             >
               {showInactive ? 'Hide' : 'Show'} inactive
             </button>
           )}
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            + Add Player
+          <button onClick={() => setShowModal(true)} className="btn-primary text-sm">
+            <span className="sm:hidden">+ Add</span>
+            <span className="hidden sm:inline">+ Add Player</span>
           </button>
         </div>
       </div>
@@ -75,7 +76,7 @@ export default function Players() {
           {displayed.map((player, i) => (
             <div
               key={player.id}
-              className={`card-raised px-5 py-4 flex items-center gap-4 table-row-anim ${!player.active ? 'opacity-40' : ''}`}
+              className={`card-raised px-4 md:px-5 py-3 md:py-4 flex items-center gap-3 md:gap-4 table-row-anim ${!player.active ? 'opacity-40' : ''}`}
               style={{ animationDelay: `${i * 30}ms` }}
             >
               {/* MMR */}
@@ -109,7 +110,7 @@ export default function Players() {
                       ? `${Math.round((player.wins / (player.wins + player.losses)) * 100)}%`
                       : '—'}
                   </span>
-                  <span className={`text-xs font-mono ${(player.points_scored - player.points_conceded) >= 0 ? 'text-white/30' : 'text-loss/40'}`}>
+                  <span className={`hidden sm:inline text-xs font-mono ${(player.points_scored - player.points_conceded) >= 0 ? 'text-white/30' : 'text-loss/40'}`}>
                     diff {player.points_scored - player.points_conceded >= 0 ? '+' : ''}{player.points_scored - player.points_conceded}
                   </span>
                 </div>
@@ -214,7 +215,7 @@ function PlayerModal({ player, onClose, onSaved }) {
 
 function PageLoader() {
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="h-8 w-32 bg-white/[0.06] rounded animate-pulse mb-8" />
       <div className="space-y-2">
         {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-white/[0.04] rounded-xl animate-pulse" />)}

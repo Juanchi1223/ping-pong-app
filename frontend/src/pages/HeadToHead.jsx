@@ -31,15 +31,15 @@ export default function HeadToHead() {
   const p2WinPct = total > 0 ? Math.round((data.p2wins / total) * 100) : 50;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="font-display text-4xl text-white tracking-wide">Head 2 Head</h1>
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      <div className="mb-6 md:mb-8">
+        <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">Head 2 Head</h1>
         <p className="text-white/35 text-sm font-body mt-1">Compare two players' direct match history</p>
       </div>
 
       {/* Player selectors */}
-      <div className="card p-5 mb-6">
-        <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-end">
+      <div className="card p-4 md:p-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-3 sm:gap-4 items-end">
           <div>
             <label className="label">Player 1</label>
             <div className="relative">
@@ -52,7 +52,7 @@ export default function HeadToHead() {
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
             </div>
           </div>
-          <div className="vs-divider pb-6">VS</div>
+          <div className="vs-divider hidden sm:block pb-6">VS</div>
           <div>
             <label className="label">Player 2</label>
             <div className="relative">
@@ -87,11 +87,11 @@ export default function HeadToHead() {
       {data && !loading && (
         <div className="space-y-5">
           {/* Stats comparison */}
-          <div className="card p-5">
+          <div className="card p-4 md:p-5">
             {/* Names & overall wins */}
-            <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center mb-5">
-              <div>
-                <Link to={`/players/${p1?.id}`} className="font-display text-2xl text-white hover:text-accent transition-colors tracking-wide block truncate">
+            <div className="grid grid-cols-[1fr,auto,1fr] gap-3 md:gap-4 items-center mb-5">
+              <div className="min-w-0">
+                <Link to={`/players/${p1?.id}`} className="font-display text-lg md:text-2xl text-white hover:text-accent transition-colors tracking-wide block truncate">
                   {p1?.name}
                 </Link>
                 <div className="text-white/30 text-xs font-mono">MMR {p1?.mmr}</div>
@@ -99,8 +99,8 @@ export default function HeadToHead() {
               <div className="text-white/20 text-xs font-mono uppercase tracking-widest text-center">
                 {total} {total === 1 ? 'match' : 'matches'}
               </div>
-              <div className="text-right">
-                <Link to={`/players/${p2?.id}`} className="font-display text-2xl text-white hover:text-accent transition-colors tracking-wide block truncate">
+              <div className="text-right min-w-0">
+                <Link to={`/players/${p2?.id}`} className="font-display text-lg md:text-2xl text-white hover:text-accent transition-colors tracking-wide block truncate">
                   {p2?.name}
                 </Link>
                 <div className="text-white/30 text-xs font-mono text-right">MMR {p2?.mmr}</div>
@@ -157,14 +157,14 @@ export default function HeadToHead() {
           {data.matches.length > 0 && (
             <div>
               <h2 className="font-display text-2xl text-white tracking-wide mb-3">Match History</h2>
-              <div className="card overflow-hidden">
-                <table className="w-full">
+              <div className="card overflow-hidden overflow-x-auto">
+                <table className="w-full min-w-0">
                   <thead>
                     <tr className="border-b border-white/[0.06]">
-                      <th className="text-left px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Date</th>
-                      <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Score</th>
-                      <th className="text-center px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Winner</th>
-                      <th className="text-right px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR Δ</th>
+                      <th className="hidden md:table-cell text-left px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Date</th>
+                      <th className="text-center px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Score</th>
+                      <th className="text-center px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Winner</th>
+                      <th className="text-right px-3 md:px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR Δ</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -182,15 +182,15 @@ export default function HeadToHead() {
                           className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors table-row-anim"
                           style={{ animationDelay: `${i * 25}ms` }}
                         >
-                          <td className="px-5 py-3.5 text-white/30 text-xs font-mono">
+                          <td className="hidden md:table-cell px-5 py-3.5 text-white/30 text-xs font-mono">
                             {new Date(m.played_at).toLocaleDateString()}
                           </td>
-                          <td className="px-4 py-3.5 text-center font-mono text-sm text-white/60">
+                          <td className="px-3 md:px-4 py-3.5 text-center font-mono text-sm text-white/60">
                             <span className={p1Won ? 'text-accent' : 'text-white/40'}>{p1Score}</span>
                             <span className="text-white/20"> – </span>
                             <span className={!p1Won ? 'text-purple' : 'text-white/40'}>{p2Score}</span>
                           </td>
-                          <td className="px-4 py-3.5 text-center">
+                          <td className="px-3 md:px-4 py-3.5 text-center">
                             <span className={`text-xs font-mono px-2 py-0.5 rounded border ${
                               p1Won
                                 ? 'text-accent bg-accent/10 border-accent/20'
@@ -199,7 +199,7 @@ export default function HeadToHead() {
                               {p1Won ? p1?.name : p2?.name}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-right">
+                          <td className="px-3 md:px-5 py-3.5 text-right">
                             <div className="text-right space-y-0.5">
                               <div className={`font-mono text-xs ${p1Delta > 0 ? 'text-accent' : 'text-loss'}`}>
                                 {p1?.name?.split(' ')[0]}: {p1Delta > 0 ? '+' : ''}{p1Delta}

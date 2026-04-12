@@ -22,10 +22,10 @@ export default function Dashboard() {
   if (error) return <PageError message={error} />;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-display text-4xl text-white tracking-wide">Rankings</h1>
+      <div className="mb-6 md:mb-8">
+        <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">Rankings</h1>
         <p className="text-white/35 text-sm font-body mt-1">
           {players.length} active player{players.length !== 1 ? 's' : ''} · Sorted by MMR
         </p>
@@ -33,7 +33,7 @@ export default function Dashboard() {
 
       {/* Badge cards */}
       {(bestDiff || onFire || badStreak) && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
           <BadgeCard
             icon="🏰"
             title="El Muro"
@@ -65,18 +65,18 @@ export default function Dashboard() {
       {players.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full">
+        <div className="card overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-0">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest w-12">#</th>
-                <th className="text-left px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Player</th>
-                <th className="text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR</th>
-                <th className="text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">W</th>
-                <th className="text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">L</th>
-                <th className="text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">W%</th>
-                <th className="text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Diff</th>
-                <th className="text-right px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Streak</th>
+                <th className="text-left px-3 md:px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest w-10 md:w-12">#</th>
+                <th className="text-left px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Player</th>
+                <th className="text-right px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">MMR</th>
+                <th className="text-right px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">W</th>
+                <th className="text-right px-3 md:px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">L</th>
+                <th className="hidden md:table-cell text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">W%</th>
+                <th className="hidden md:table-cell text-right px-4 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Diff</th>
+                <th className="text-right px-3 md:px-5 py-3 text-white/30 text-xs font-mono uppercase tracking-widest">Streak</th>
               </tr>
             </thead>
             <tbody>
@@ -87,22 +87,22 @@ export default function Dashboard() {
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
                   {/* Rank */}
-                  <td className="px-5 py-3.5">
-                    <span className={`rank-num text-xl ${i === 0 ? 'text-accent' : i === 1 ? 'text-white/50' : i === 2 ? 'text-fire/70' : 'text-white/25'}`}>
+                  <td className="px-3 md:px-5 py-3.5">
+                    <span className={`rank-num text-lg md:text-xl ${i === 0 ? 'text-accent' : i === 1 ? 'text-white/50' : i === 2 ? 'text-fire/70' : 'text-white/25'}`}>
                       {player.rank}
                     </span>
                   </td>
 
                   {/* Player name + badges */}
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2.5">
+                  <td className="px-3 md:px-4 py-3.5">
+                    <div className="flex items-center gap-1.5 md:gap-2.5">
                       <Link
                         to={`/players/${player.id}`}
-                        className="font-body font-medium text-white/85 hover:text-accent transition-colors text-sm group-hover:text-white"
+                        className="font-body font-medium text-white/85 hover:text-accent transition-colors text-sm group-hover:text-white truncate max-w-[100px] md:max-w-none"
                       >
                         {player.name}
                       </Link>
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1 flex-shrink-0">
                         {player.badges?.bestDiff && <MicroBadge label="🏰" title="El Muro – Best Differential" color="accent" />}
                         {player.badges?.onFire && <MicroBadge label="🔥" title="On Fire – Win Streak" color="fire" />}
                         {player.badges?.badStreak && <MicroBadge label="❄️" title="Cold Spell – Loss Streak" color="loss" />}
@@ -111,34 +111,34 @@ export default function Dashboard() {
                   </td>
 
                   {/* MMR */}
-                  <td className="px-4 py-3.5 text-right">
+                  <td className="px-3 md:px-4 py-3.5 text-right">
                     <span className="mmr-display text-white/90 text-sm">{player.mmr}</span>
                   </td>
 
                   {/* Wins */}
-                  <td className="px-4 py-3.5 text-right">
+                  <td className="px-3 md:px-4 py-3.5 text-right">
                     <span className="font-mono text-accent/80 text-sm">{player.wins}</span>
                   </td>
 
                   {/* Losses */}
-                  <td className="px-4 py-3.5 text-right">
+                  <td className="px-3 md:px-4 py-3.5 text-right">
                     <span className="font-mono text-loss/70 text-sm">{player.losses}</span>
                   </td>
 
-                  {/* Win % */}
-                  <td className="px-4 py-3.5 text-right">
+                  {/* Win % — hidden on mobile */}
+                  <td className="hidden md:table-cell px-4 py-3.5 text-right">
                     <span className="font-mono text-white/45 text-sm">{player.win_pct}%</span>
                   </td>
 
-                  {/* Diff */}
-                  <td className="px-4 py-3.5 text-right">
+                  {/* Diff — hidden on mobile */}
+                  <td className="hidden md:table-cell px-4 py-3.5 text-right">
                     <span className={`font-mono text-sm ${player.diff >= 0 ? 'text-accent/70' : 'text-loss/70'}`}>
                       {player.diff >= 0 ? '+' : ''}{player.diff}
                     </span>
                   </td>
 
                   {/* Streak */}
-                  <td className="px-5 py-3.5 text-right">
+                  <td className="px-3 md:px-5 py-3.5 text-right">
                     <StreakBadge wins={player.current_win_streak} losses={player.current_loss_streak} />
                   </td>
                 </tr>
@@ -213,9 +213,9 @@ function EmptyState() {
 
 function PageLoader() {
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="h-8 w-40 bg-white/[0.06] rounded animate-pulse mb-8" />
-      <div className="grid grid-cols-3 gap-4 mb-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
+      <div className="h-8 w-40 bg-white/[0.06] rounded animate-pulse mb-6 md:mb-8" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
         {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white/[0.04] rounded-xl animate-pulse" />)}
       </div>
       <div className="card h-64 animate-pulse" />
@@ -225,7 +225,7 @@ function PageLoader() {
 
 function PageError({ message }) {
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
       <div className="card p-6 border-loss/20 bg-loss/[0.05]">
         <div className="text-loss text-sm font-mono">{message}</div>
       </div>
