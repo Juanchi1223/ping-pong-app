@@ -5,6 +5,7 @@ import Players from './pages/Players';
 import RegisterMatch from './pages/RegisterMatch';
 import PlayerProfile from './pages/PlayerProfile';
 import HeadToHead from './pages/HeadToHead';
+import MatchHistory from './pages/MatchHistory';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="players/:id" element={<PlayerProfile />} />
           <Route path="register" element={<RegisterMatch />} />
           <Route path="h2h" element={<HeadToHead />} />
+          <Route path="history" element={<MatchHistory />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
