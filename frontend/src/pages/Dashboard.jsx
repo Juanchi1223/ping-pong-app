@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import { useSocket } from '../hooks/useSocket';
 
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
@@ -14,6 +15,12 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  const { data: liveRankings, connected } = useSocket('ranking:update');
+
+  useEffect(() => {
+    if (liveRankings) setPlayers(liveRankings);
+  }, [liveRankings]);
+
   const bestDiff = players.find(p => p.badges?.bestDiff);
   const onFire = players.find(p => p.badges?.onFire);
   const badStreak = players.find(p => p.badges?.badStreak);
@@ -26,8 +33,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">Rankings</h1>
-        <p className="text-white/35 text-sm font-body mt-1">
+        <p className="text-white/35 text-sm font-body mt-1 flex items-center gap-2">
           {players.length} active player{players.length !== 1 ? 's' : ''} · Sorted by MMR
+          <span className={`inline-flex items-center gap-1 text-xs ${connected ? 'text-accent/60' : 'text-white/20'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-accent animate-pulse' : 'bg-white/20'}`} />
+            {connected ? 'live' : 'offline'}
+          </span>
         </p>
       </div>
 
