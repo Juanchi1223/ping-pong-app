@@ -21,25 +21,26 @@ function computeBadges(players) {
   };
 }
 
+async function getRankings() {
+  const players = await db('players').where({ active: 1 }).orderBy('mmr', 'desc');
+  const { bestDiffId, onFireId, badStreakId } = computeBadges(players);
+  return players.map((p, i) => ({
+    ...p,
+    rank: i + 1,
+    diff: p.points_scored - p.points_conceded,
+    win_pct: p.wins + p.losses > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0,
+    badges: {
+      bestDiff: p.id === bestDiffId,
+      onFire: p.id === onFireId,
+      badStreak: p.id === badStreakId,
+    },
+  }));
+}
+
 // GET all active players with ranking badges
 router.get('/', async (req, res) => {
   try {
-    const players = await db('players').where({ active: 1 }).orderBy('mmr', 'desc');
-    const { bestDiffId, onFireId, badStreakId } = computeBadges(players);
-
-    const result = players.map((p, i) => ({
-      ...p,
-      rank: i + 1,
-      diff: p.points_scored - p.points_conceded,
-      win_pct: p.wins + p.losses > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0,
-      badges: {
-        bestDiff: p.id === bestDiffId,
-        onFire: p.id === onFireId,
-        badStreak: p.id === badStreakId,
-      },
-    }));
-
-    res.json(result);
+    res.json(await getRankings());
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -75,6 +76,12 @@ router.post('/', async (req, res) => {
     const [id] = await db('players').insert({ name: name.trim() });
     const player = await db('players').where({ id }).first();
     res.status(201).json(player);
+
+    try {
+      req.app.get('io').emit('ranking:update', await getRankings());
+    } catch (emitErr) {
+      console.error('[ws] ranking:update emit failed:', emitErr.message);
+    }
   } catch (err) {
     if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Player name already exists' });
     res.status(500).json({ error: err.message });
@@ -101,6 +108,12 @@ router.delete('/:id', async (req, res) => {
   try {
     await db('players').where({ id: req.params.id }).update({ active: 0 });
     res.json({ success: true });
+
+    try {
+      req.app.get('io').emit('ranking:update', await getRankings());
+    } catch (emitErr) {
+      console.error('[ws] ranking:update emit failed:', emitErr.message);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -111,6 +124,12 @@ router.patch('/:id/reactivate', async (req, res) => {
   try {
     await db('players').where({ id: req.params.id }).update({ active: 1 });
     res.json({ success: true });
+
+    try {
+      req.app.get('io').emit('ranking:update', await getRankings());
+    } catch (emitErr) {
+      console.error('[ws] ranking:update emit failed:', emitErr.message);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

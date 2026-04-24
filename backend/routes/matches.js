@@ -14,6 +14,16 @@ function withNames(query) {
     );
 }
 
+async function getRankings() {
+  const players = await db('players').where({ active: 1 }).orderBy('mmr', 'desc');
+  return players.map((p, i) => ({
+    ...p,
+    rank: i + 1,
+    diff: p.points_scored - p.points_conceded,
+    win_pct: p.wins + p.losses > 0 ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0,
+  }));
+}
+
 // GET all matches
 router.get('/', async (req, res) => {
   try {
@@ -128,6 +138,15 @@ router.post('/', async (req, res) => {
 
     const match = await withNames(db('matches')).where('matches.id', matchId).first();
     res.status(201).json(match);
+
+    // Emit real-time events after the HTTP response is sent
+    try {
+      const io = req.app.get('io');
+      io.emit('match:score_update', match);
+      io.emit('ranking:update', await getRankings());
+    } catch (emitErr) {
+      console.error('[ws] emit failed after match creation:', emitErr.message);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -176,6 +195,12 @@ router.delete('/:id', async (req, res) => {
     });
 
     res.json({ success: true });
+
+    try {
+      req.app.get('io').emit('ranking:update', await getRankings());
+    } catch (emitErr) {
+      console.error('[ws] ranking:update emit failed after match deletion:', emitErr.message);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
