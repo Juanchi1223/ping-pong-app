@@ -51,6 +51,9 @@ export default function PlayerProfile() {
         <div className="flex items-start justify-between mb-5 md:mb-6 gap-3">
           <div className="min-w-0">
             <h1 className="font-display text-2xl md:text-4xl text-white tracking-wide truncate">{player.name}</h1>
+            {player.department && (
+              <div className="text-white/40 text-sm font-body mt-0.5">{player.department}</div>
+            )}
             <div className="text-white/30 text-xs font-mono mt-1">
               Member since {new Date(player.created_at).toLocaleDateString()}
             </div>
