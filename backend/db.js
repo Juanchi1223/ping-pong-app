@@ -21,8 +21,17 @@ async function initDb() {
       t.integer('current_win_streak').notNullable().defaultTo(0);
       t.integer('current_loss_streak').notNullable().defaultTo(0);
       t.integer('active').notNullable().defaultTo(1);
+      t.string('department').nullable();
       t.string('created_at').notNullable().defaultTo(db.fn.now());
     });
+  } else {
+    // Migration: add department column if it doesn't exist
+    const hasCol = await db.schema.hasColumn('players', 'department');
+    if (!hasCol) {
+      await db.schema.alterTable('players', (t) => {
+        t.string('department').nullable();
+      });
+    }
   }
 
   const hasMatches = await db.schema.hasTable('matches');

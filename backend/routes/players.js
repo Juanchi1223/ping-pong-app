@@ -69,11 +69,14 @@ router.get('/:id', async (req, res) => {
 
 // POST create player
 router.post('/', async (req, res) => {
-  const { name } = req.body;
+  const { name, department } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
   try {
-    const [id] = await db('players').insert({ name: name.trim() });
+    const [id] = await db('players').insert({
+      name: name.trim(),
+      department: department?.trim() || null,
+    });
     const player = await db('players').where({ id }).first();
     res.status(201).json(player);
 
@@ -88,13 +91,16 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update player name
+// PUT update player
 router.put('/:id', async (req, res) => {
-  const { name } = req.body;
+  const { name, department } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
   try {
-    await db('players').where({ id: req.params.id }).update({ name: name.trim() });
+    await db('players').where({ id: req.params.id }).update({
+      name: name.trim(),
+      department: department?.trim() || null,
+    });
     const player = await db('players').where({ id: req.params.id }).first();
     res.json(player);
   } catch (err) {

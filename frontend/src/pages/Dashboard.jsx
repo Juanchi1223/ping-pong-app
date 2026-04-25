@@ -107,12 +107,19 @@ export default function Dashboard() {
                   {/* Player name + badges */}
                   <td className="px-3 md:px-4 py-3.5">
                     <div className="flex items-center gap-1.5 md:gap-2.5">
-                      <Link
-                        to={`/players/${player.id}`}
-                        className="font-body font-medium text-white/85 hover:text-accent transition-colors text-sm group-hover:text-white truncate max-w-[100px] md:max-w-none"
-                      >
-                        {player.name}
-                      </Link>
+                      <div className="min-w-0">
+                        <Link
+                          to={`/players/${player.id}`}
+                          className="font-body font-medium text-white/85 hover:text-accent transition-colors text-sm group-hover:text-white truncate block max-w-[100px] md:max-w-none"
+                        >
+                          {player.name}
+                        </Link>
+                        {player.department && (
+                          <span className="text-[11px] font-body text-white/30 truncate block max-w-[100px] md:max-w-none">
+                            {player.department}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex gap-1 flex-shrink-0">
                         {player.badges?.bestDiff && <MicroBadge label="🏰" title="El Muro – Best Differential" color="accent" />}
                         {player.badges?.onFire && <MicroBadge label="🔥" title="On Fire – Win Streak" color="fire" />}

@@ -102,6 +102,9 @@ export default function Players() {
                     <span className="text-[10px] font-mono text-white/25 border border-white/10 px-1.5 py-0.5 rounded">inactive</span>
                   )}
                 </div>
+                {player.department && (
+                  <div className="text-[11px] font-body text-white/30 mt-0.5 truncate">{player.department}</div>
+                )}
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-xs font-mono text-accent/60">{player.wins}W</span>
                   <span className="text-xs font-mono text-loss/60">{player.losses}L</span>
@@ -162,6 +165,7 @@ export default function Players() {
 
 function PlayerModal({ player, onClose, onSaved }) {
   const [name, setName] = useState(player?.name || '');
+  const [department, setDepartment] = useState(player?.department || '');
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -171,9 +175,9 @@ function PlayerModal({ player, onClose, onSaved }) {
     setSaving(true);
     try {
       if (player) {
-        await api.updatePlayer(player.id, name);
+        await api.updatePlayer(player.id, { name, department });
       } else {
-        await api.createPlayer(name);
+        await api.createPlayer({ name, department });
       }
       onSaved();
     } catch (err) {
@@ -199,8 +203,17 @@ function PlayerModal({ player, onClose, onSaved }) {
               placeholder="Enter name..."
               autoFocus
             />
-            {error && <p className="text-loss text-xs font-mono mt-1.5">{error}</p>}
           </div>
+          <div>
+            <label className="label">Department / Area</label>
+            <input
+              className="input"
+              value={department}
+              onChange={e => { setDepartment(e.target.value); setError(null); }}
+              placeholder="e.g. Engineering, Design, Sales..."
+            />
+          </div>
+          {error && <p className="text-loss text-xs font-mono mt-1.5">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-ghost flex-1">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex-1">

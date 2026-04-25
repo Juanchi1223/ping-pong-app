@@ -15,8 +15,8 @@ export const api = {
   getPlayers: () => request('/players'),
   getAllPlayers: () => request('/players/all'),
   getPlayer: (id) => request(`/players/${id}`),
-  createPlayer: (name) => request('/players', { method: 'POST', body: JSON.stringify({ name }) }),
-  updatePlayer: (id, name) => request(`/players/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  createPlayer: ({ name, department }) => request('/players', { method: 'POST', body: JSON.stringify({ name, department }) }),
+  updatePlayer: (id, { name, department }) => request(`/players/${id}`, { method: 'PUT', body: JSON.stringify({ name, department }) }),
   deactivatePlayer: (id) => request(`/players/${id}`, { method: 'DELETE' }),
   reactivatePlayer: (id) => request(`/players/${id}/reactivate`, { method: 'PATCH' }),
 
