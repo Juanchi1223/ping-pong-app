@@ -1,0 +1,36 @@
+-- PingPongZS initial schema for Supabase Postgres.
+-- Mirrors the columns of the existing SQLite schema in backend/db.js.
+
+create table if not exists players (
+  id                  bigint generated always as identity primary key,
+  name                text        not null unique,
+  mmr                 integer     not null default 1000,
+  wins                integer     not null default 0,
+  losses              integer     not null default 0,
+  points_scored       integer     not null default 0,
+  points_conceded     integer     not null default 0,
+  current_win_streak  integer     not null default 0,
+  current_loss_streak integer     not null default 0,
+  active              boolean     not null default true,
+  department          text,
+  created_at          timestamptz not null default now()
+);
+
+create table if not exists matches (
+  id          bigint generated always as identity primary key,
+  player_a_id bigint      not null references players(id) on delete restrict,
+  player_b_id bigint      not null references players(id) on delete restrict,
+  score_a     integer     not null,
+  score_b     integer     not null,
+  mmr_delta_a integer     not null,
+  mmr_delta_b integer     not null,
+  played_at   timestamptz not null default now()
+);
+
+create index if not exists matches_player_a_idx  on matches(player_a_id);
+create index if not exists matches_player_b_idx  on matches(player_b_id);
+create index if not exists matches_played_at_idx on matches(played_at desc);
+
+-- Enable Supabase Realtime on both tables.
+alter publication supabase_realtime add table players;
+alter publication supabase_realtime add table matches;
