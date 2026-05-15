@@ -1,21 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db');
+const { supabase } = require('../db');
 const { calculateElo } = require('../elo');
 
-function withNames(query) {
-  return query
-    .join('players as pa', 'matches.player_a_id', 'pa.id')
-    .join('players as pb', 'matches.player_b_id', 'pb.id')
-    .select(
-      'matches.*',
-      'pa.name as player_a_name',
-      'pb.name as player_b_name'
-    );
+async function attachNames(matches) {
+  if (!matches.length) return matches;
+  const ids = [...new Set(matches.flatMap(m => [m.player_a_id, m.player_b_id]))];
+  const { data: players, error } = await supabase
+    .from('players').select('id, name').in('id', ids);
+  if (error) throw new Error(error.message);
+  const nameById = new Map(players.map(p => [p.id, p.name]));
+  return matches.map(m => ({
+    ...m,
+    player_a_name: nameById.get(m.player_a_id) ?? null,
+    player_b_name: nameById.get(m.player_b_id) ?? null,
+  }));
 }
 
 async function getRankings() {
-  const players = await db('players').where({ active: 1 }).orderBy('mmr', 'desc');
+  const { data: players, error } = await supabase
+    .from('players').select('*').eq('active', true).order('mmr', { ascending: false });
+  if (error) throw new Error(error.message);
   return players.map((p, i) => ({
     ...p,
     rank: i + 1,
@@ -24,68 +29,62 @@ async function getRankings() {
   }));
 }
 
-// GET all matches
 router.get('/', async (req, res) => {
   try {
-    const matches = await withNames(db('matches')).orderBy('matches.played_at', 'desc');
-    res.json(matches);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase
+      .from('matches').select('*').order('played_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    res.json(await attachNames(data));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET matches for a specific player
 router.get('/player/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const matches = await withNames(db('matches'))
-      .where('matches.player_a_id', id)
-      .orWhere('matches.player_b_id', id)
-      .orderBy('matches.played_at', 'desc');
-    res.json(matches);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    const { data, error } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`player_a_id.eq.${id},player_b_id.eq.${id}`)
+      .order('played_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    res.json(await attachNames(data));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET head-to-head between two players
 router.get('/h2h/:id1/:id2', async (req, res) => {
   try {
-    const { id1, id2 } = req.params;
+    const id1 = Number(req.params.id1);
+    const id2 = Number(req.params.id2);
 
-    const matches = await withNames(db('matches'))
-      .where(function () {
-        this.where('matches.player_a_id', id1).andWhere('matches.player_b_id', id2);
-      })
-      .orWhere(function () {
-        this.where('matches.player_a_id', id2).andWhere('matches.player_b_id', id1);
-      })
-      .orderBy('matches.played_at', 'desc');
+    const { data: rawMatches, error } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`and(player_a_id.eq.${id1},player_b_id.eq.${id2}),and(player_a_id.eq.${id2},player_b_id.eq.${id1})`)
+      .order('played_at', { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const matches = await attachNames(rawMatches);
 
     const p1wins = matches.filter(m =>
-      (m.player_a_id == id1 && m.score_a > m.score_b) ||
-      (m.player_b_id == id1 && m.score_b > m.score_a)
+      (m.player_a_id === id1 && m.score_a > m.score_b) ||
+      (m.player_b_id === id1 && m.score_b > m.score_a)
     ).length;
-
     const p2wins = matches.length - p1wins;
 
     const p1PointsScored = matches.reduce((acc, m) =>
-      acc + (m.player_a_id == id1 ? m.score_a : m.score_b), 0);
+      acc + (m.player_a_id === id1 ? m.score_a : m.score_b), 0);
     const p2PointsScored = matches.reduce((acc, m) =>
-      acc + (m.player_a_id == id2 ? m.score_a : m.score_b), 0);
+      acc + (m.player_a_id === id2 ? m.score_a : m.score_b), 0);
 
-    const [player1, player2] = await Promise.all([
-      db('players').where({ id: id1 }).first(),
-      db('players').where({ id: id2 }).first(),
+    const [{ data: player1 }, { data: player2 }] = await Promise.all([
+      supabase.from('players').select('*').eq('id', id1).maybeSingle(),
+      supabase.from('players').select('*').eq('id', id2).maybeSingle(),
     ]);
 
     res.json({ matches, p1wins, p2wins, p1PointsScored, p2PointsScored, player1, player2 });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST register a match
 router.post('/', async (req, res) => {
   const { player_a_id, player_b_id, score_a, score_b } = req.body;
 
@@ -96,103 +95,107 @@ router.post('/', async (req, res) => {
   if (Number(score_a) < 0 || Number(score_b) < 0) return res.status(400).json({ error: 'Scores must be non-negative' });
 
   try {
-    const [playerA, playerB] = await Promise.all([
-      db('players').where({ id: player_a_id, active: 1 }).first(),
-      db('players').where({ id: player_b_id, active: 1 }).first(),
+    const [{ data: playerA }, { data: playerB }] = await Promise.all([
+      supabase.from('players').select('*').eq('id', player_a_id).eq('active', true).maybeSingle(),
+      supabase.from('players').select('*').eq('id', player_b_id).eq('active', true).maybeSingle(),
     ]);
-
     if (!playerA || !playerB) return res.status(404).json({ error: 'Player not found or inactive' });
 
     const { deltaA, deltaB } = calculateElo(playerA.mmr, playerB.mmr, Number(score_a), Number(score_b));
     const aWon = Number(score_a) > Number(score_b);
 
-    const matchId = await db.transaction(async (trx) => {
-      const [id] = await trx('matches').insert({
+    const { data: inserted, error: insertErr } = await supabase
+      .from('matches')
+      .insert({
         player_a_id, player_b_id,
         score_a: Number(score_a), score_b: Number(score_b),
         mmr_delta_a: deltaA, mmr_delta_b: deltaB,
-      });
+      })
+      .select()
+      .single();
+    if (insertErr) throw new Error(insertErr.message);
 
-      await trx('players').where({ id: player_a_id }).update({
-        mmr: playerA.mmr + deltaA,
-        wins: playerA.wins + (aWon ? 1 : 0),
-        losses: playerA.losses + (aWon ? 0 : 1),
-        points_scored: playerA.points_scored + Number(score_a),
-        points_conceded: playerA.points_conceded + Number(score_b),
-        current_win_streak: aWon ? playerA.current_win_streak + 1 : 0,
-        current_loss_streak: aWon ? 0 : playerA.current_loss_streak + 1,
-      });
+    const updatesA = {
+      mmr: playerA.mmr + deltaA,
+      wins: playerA.wins + (aWon ? 1 : 0),
+      losses: playerA.losses + (aWon ? 0 : 1),
+      points_scored: playerA.points_scored + Number(score_a),
+      points_conceded: playerA.points_conceded + Number(score_b),
+      current_win_streak: aWon ? playerA.current_win_streak + 1 : 0,
+      current_loss_streak: aWon ? 0 : playerA.current_loss_streak + 1,
+    };
+    const updatesB = {
+      mmr: playerB.mmr + deltaB,
+      wins: playerB.wins + (aWon ? 0 : 1),
+      losses: playerB.losses + (aWon ? 1 : 0),
+      points_scored: playerB.points_scored + Number(score_b),
+      points_conceded: playerB.points_conceded + Number(score_a),
+      current_win_streak: aWon ? 0 : playerB.current_win_streak + 1,
+      current_loss_streak: aWon ? playerB.current_loss_streak + 1 : 0,
+    };
 
-      await trx('players').where({ id: player_b_id }).update({
-        mmr: playerB.mmr + deltaB,
-        wins: playerB.wins + (aWon ? 0 : 1),
-        losses: playerB.losses + (aWon ? 1 : 0),
-        points_scored: playerB.points_scored + Number(score_b),
-        points_conceded: playerB.points_conceded + Number(score_a),
-        current_win_streak: aWon ? 0 : playerB.current_win_streak + 1,
-        current_loss_streak: aWon ? playerB.current_loss_streak + 1 : 0,
-      });
+    const [{ error: errA }, { error: errB }] = await Promise.all([
+      supabase.from('players').update(updatesA).eq('id', player_a_id),
+      supabase.from('players').update(updatesB).eq('id', player_b_id),
+    ]);
+    if (errA) throw new Error(errA.message);
+    if (errB) throw new Error(errB.message);
 
-      return id;
-    });
+    const [withNames] = await attachNames([inserted]);
+    res.status(201).json(withNames);
 
-    const match = await withNames(db('matches')).where('matches.id', matchId).first();
-    res.status(201).json(match);
-
-    // Emit real-time events after the HTTP response is sent
     try {
       const io = req.app.get('io');
-      io.emit('match:score_update', match);
+      io.emit('match:score_update', withNames);
       io.emit('ranking:update', await getRankings());
     } catch (emitErr) {
       console.error('[ws] emit failed after match creation:', emitErr.message);
     }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE a match and reverse all player stats
 router.delete('/:id', async (req, res) => {
   try {
-    const match = await db('matches').where({ id: req.params.id }).first();
+    const { data: match, error: mErr } = await supabase
+      .from('matches').select('*').eq('id', req.params.id).maybeSingle();
+    if (mErr) throw new Error(mErr.message);
     if (!match) return res.status(404).json({ error: 'Match not found' });
 
-    const [playerA, playerB] = await Promise.all([
-      db('players').where({ id: match.player_a_id }).first(),
-      db('players').where({ id: match.player_b_id }).first(),
+    const [{ data: playerA }, { data: playerB }] = await Promise.all([
+      supabase.from('players').select('*').eq('id', match.player_a_id).maybeSingle(),
+      supabase.from('players').select('*').eq('id', match.player_b_id).maybeSingle(),
     ]);
 
     const aWon = match.score_a > match.score_b;
 
-    await db.transaction(async (trx) => {
-      await trx('matches').where({ id: req.params.id }).delete();
+    const { error: delErr } = await supabase
+      .from('matches').delete().eq('id', req.params.id);
+    if (delErr) throw new Error(delErr.message);
 
-      await trx('players').where({ id: match.player_a_id }).update({
-        mmr: playerA.mmr - match.mmr_delta_a,
-        wins: playerA.wins - (aWon ? 1 : 0),
-        losses: playerA.losses - (aWon ? 0 : 1),
-        points_scored: playerA.points_scored - match.score_a,
-        points_conceded: playerA.points_conceded - match.score_b,
-      });
+    await supabase.from('players').update({
+      mmr: playerA.mmr - match.mmr_delta_a,
+      wins: playerA.wins - (aWon ? 1 : 0),
+      losses: playerA.losses - (aWon ? 0 : 1),
+      points_scored: playerA.points_scored - match.score_a,
+      points_conceded: playerA.points_conceded - match.score_b,
+    }).eq('id', match.player_a_id);
 
-      await trx('players').where({ id: match.player_b_id }).update({
-        mmr: playerB.mmr - match.mmr_delta_b,
-        wins: playerB.wins - (aWon ? 0 : 1),
-        losses: playerB.losses - (aWon ? 1 : 0),
-        points_scored: playerB.points_scored - match.score_b,
-        points_conceded: playerB.points_conceded - match.score_a,
-      });
+    await supabase.from('players').update({
+      mmr: playerB.mmr - match.mmr_delta_b,
+      wins: playerB.wins - (aWon ? 0 : 1),
+      losses: playerB.losses - (aWon ? 1 : 0),
+      points_scored: playerB.points_scored - match.score_b,
+      points_conceded: playerB.points_conceded - match.score_a,
+    }).eq('id', match.player_b_id);
 
-      // Recalculate streaks for both players from remaining matches
-      const [streakA, streakB] = await Promise.all([
-        recalculateStreak(trx, match.player_a_id),
-        recalculateStreak(trx, match.player_b_id),
-      ]);
-
-      await trx('players').where({ id: match.player_a_id }).update(streakA);
-      await trx('players').where({ id: match.player_b_id }).update(streakB);
-    });
+    const [streakA, streakB] = await Promise.all([
+      recalculateStreak(match.player_a_id),
+      recalculateStreak(match.player_b_id),
+    ]);
+    await Promise.all([
+      supabase.from('players').update(streakA).eq('id', match.player_a_id),
+      supabase.from('players').update(streakB).eq('id', match.player_b_id),
+    ]);
 
     res.json({ success: true });
 
@@ -201,15 +204,16 @@ router.delete('/:id', async (req, res) => {
     } catch (emitErr) {
       console.error('[ws] ranking:update emit failed after match deletion:', emitErr.message);
     }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-async function recalculateStreak(trx, playerId) {
-  const matches = await trx('matches')
-    .where(function () { this.where('player_a_id', playerId).orWhere('player_b_id', playerId); })
-    .orderBy('played_at', 'desc');
+async function recalculateStreak(playerId) {
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('*')
+    .or(`player_a_id.eq.${playerId},player_b_id.eq.${playerId}`)
+    .order('played_at', { ascending: false });
+  if (error) throw new Error(error.message);
 
   let current_win_streak = 0, current_loss_streak = 0;
   for (const m of matches) {

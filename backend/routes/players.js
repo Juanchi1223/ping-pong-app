@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db');
+const { supabase } = require('../db');
 
 function computeBadges(players) {
   let bestDiffId = null, bestDiff = -Infinity;
@@ -22,7 +22,13 @@ function computeBadges(players) {
 }
 
 async function getRankings() {
-  const players = await db('players').where({ active: 1 }).orderBy('mmr', 'desc');
+  const { data: players, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('active', true)
+    .order('mmr', { ascending: false });
+  if (error) throw new Error(error.message);
+
   const { bestDiffId, onFireId, badStreakId } = computeBadges(players);
   return players.map((p, i) => ({
     ...p,
@@ -37,108 +43,85 @@ async function getRankings() {
   }));
 }
 
-// GET all active players with ranking badges
+async function emitRankingUpdate(req) {
+  try {
+    req.app.get('io').emit('ranking:update', await getRankings());
+  } catch (emitErr) {
+    console.error('[ws] ranking:update emit failed:', emitErr.message);
+  }
+}
+
 router.get('/', async (req, res) => {
-  try {
-    res.json(await getRankings());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  try { res.json(await getRankings()); }
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET all players including inactive (for selectors)
 router.get('/all', async (req, res) => {
-  try {
-    const players = await db('players').orderBy('mmr', 'desc');
-    res.json(players);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { data, error } = await supabase
+    .from('players').select('*').order('mmr', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-// GET single player
 router.get('/:id', async (req, res) => {
-  try {
-    const player = await db('players').where({ id: req.params.id }).first();
-    if (!player) return res.status(404).json({ error: 'Player not found' });
-    res.json(player);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { data, error } = await supabase
+    .from('players').select('*').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Player not found' });
+  res.json(data);
 });
 
-// POST create player
 router.post('/', async (req, res) => {
   const { name, department } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
-  try {
-    const [id] = await db('players').insert({
-      name: name.trim(),
-      department: department?.trim() || null,
-    });
-    const player = await db('players').where({ id }).first();
-    res.status(201).json(player);
+  const { data, error } = await supabase
+    .from('players')
+    .insert({ name: name.trim(), department: department?.trim() || null })
+    .select()
+    .single();
 
-    try {
-      req.app.get('io').emit('ranking:update', await getRankings());
-    } catch (emitErr) {
-      console.error('[ws] ranking:update emit failed:', emitErr.message);
-    }
-  } catch (err) {
-    if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Player name already exists' });
-    res.status(500).json({ error: err.message });
+  if (error) {
+    if (error.code === '23505') return res.status(400).json({ error: 'Player name already exists' });
+    return res.status(500).json({ error: error.message });
   }
+  res.status(201).json(data);
+  emitRankingUpdate(req);
 });
 
-// PUT update player
 router.put('/:id', async (req, res) => {
   const { name, department } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
-  try {
-    await db('players').where({ id: req.params.id }).update({
-      name: name.trim(),
-      department: department?.trim() || null,
-    });
-    const player = await db('players').where({ id: req.params.id }).first();
-    res.json(player);
-  } catch (err) {
-    if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Player name already exists' });
-    res.status(500).json({ error: err.message });
+  const { data, error } = await supabase
+    .from('players')
+    .update({ name: name.trim(), department: department?.trim() || null })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') return res.status(400).json({ error: 'Player name already exists' });
+    return res.status(500).json({ error: error.message });
   }
+  res.json(data);
 });
 
-// DELETE (soft delete) player
 router.delete('/:id', async (req, res) => {
-  try {
-    await db('players').where({ id: req.params.id }).update({ active: 0 });
-    res.json({ success: true });
-
-    try {
-      req.app.get('io').emit('ranking:update', await getRankings());
-    } catch (emitErr) {
-      console.error('[ws] ranking:update emit failed:', emitErr.message);
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { error } = await supabase
+    .from('players').update({ active: false }).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+  emitRankingUpdate(req);
 });
 
-// PATCH reactivate player
 router.patch('/:id/reactivate', async (req, res) => {
-  try {
-    await db('players').where({ id: req.params.id }).update({ active: 1 });
-    res.json({ success: true });
-
-    try {
-      req.app.get('io').emit('ranking:update', await getRankings());
-    } catch (emitErr) {
-      console.error('[ws] ranking:update emit failed:', emitErr.message);
-    }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { error } = await supabase
+    .from('players').update({ active: true }).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+  emitRankingUpdate(req);
 });
 
 module.exports = router;
+module.exports.getRankings = getRankings;

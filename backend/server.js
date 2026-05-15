@@ -1,9 +1,8 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const { initDb } = require('./db');
 const playersRouter = require('./routes/players');
 const matchesRouter = require('./routes/matches');
 
@@ -31,11 +30,6 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 
-initDb().then(() => {
-  server.listen(PORT, () => {
-    console.log(`PingPongZS backend running on http://localhost:${PORT}`);
-  });
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
-  process.exit(1);
+server.listen(PORT, () => {
+  console.log(`PingPongZS backend running on http://localhost:${PORT}`);
 });

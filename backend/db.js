@@ -1,52 +1,13 @@
-const knex = require('knex');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-const db = knex({
-  client: 'sqlite3',
-  connection: { filename: process.env.DATABASE_PATH || path.join(__dirname, 'pingpong.db') },
-  useNullAsDefault: true,
-});
+const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
-async function initDb() {
-  const hasPlayers = await db.schema.hasTable('players');
-  if (!hasPlayers) {
-    await db.schema.createTable('players', (t) => {
-      t.increments('id').primary();
-      t.string('name').notNullable().unique();
-      t.integer('mmr').notNullable().defaultTo(1000);
-      t.integer('wins').notNullable().defaultTo(0);
-      t.integer('losses').notNullable().defaultTo(0);
-      t.integer('points_scored').notNullable().defaultTo(0);
-      t.integer('points_conceded').notNullable().defaultTo(0);
-      t.integer('current_win_streak').notNullable().defaultTo(0);
-      t.integer('current_loss_streak').notNullable().defaultTo(0);
-      t.integer('active').notNullable().defaultTo(1);
-      t.string('department').nullable();
-      t.string('created_at').notNullable().defaultTo(db.fn.now());
-    });
-  } else {
-    // Migration: add department column if it doesn't exist
-    const hasCol = await db.schema.hasColumn('players', 'department');
-    if (!hasCol) {
-      await db.schema.alterTable('players', (t) => {
-        t.string('department').nullable();
-      });
-    }
-  }
-
-  const hasMatches = await db.schema.hasTable('matches');
-  if (!hasMatches) {
-    await db.schema.createTable('matches', (t) => {
-      t.increments('id').primary();
-      t.integer('player_a_id').notNullable().references('id').inTable('players');
-      t.integer('player_b_id').notNullable().references('id').inTable('players');
-      t.integer('score_a').notNullable();
-      t.integer('score_b').notNullable();
-      t.integer('mmr_delta_a').notNullable();
-      t.integer('mmr_delta_b').notNullable();
-      t.string('played_at').notNullable().defaultTo(db.fn.now());
-    });
-  }
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in backend/.env');
 }
 
-module.exports = { db, initDb };
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false },
+});
+
+module.exports = { supabase };
