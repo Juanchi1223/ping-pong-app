@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { useSocket } from '../hooks/useSocket';
+import { useRealtimeRankings } from '../hooks/useRealtimeRankings';
 
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
@@ -15,7 +15,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const { data: liveRankings, connected } = useSocket('ranking:update');
+  const { data: liveRankings, connected } = useRealtimeRankings();
 
   useEffect(() => {
     if (liveRankings) setPlayers(liveRankings);

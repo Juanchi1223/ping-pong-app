@@ -43,14 +43,6 @@ async function getRankings() {
   }));
 }
 
-async function emitRankingUpdate(req) {
-  try {
-    req.app.get('io').emit('ranking:update', await getRankings());
-  } catch (emitErr) {
-    console.error('[ws] ranking:update emit failed:', emitErr.message);
-  }
-}
-
 router.get('/', async (req, res) => {
   try { res.json(await getRankings()); }
   catch (err) { res.status(500).json({ error: err.message }); }
@@ -86,7 +78,6 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
   res.status(201).json(data);
-  emitRankingUpdate(req);
 });
 
 router.put('/:id', async (req, res) => {
@@ -112,7 +103,6 @@ router.delete('/:id', async (req, res) => {
     .from('players').update({ active: false }).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
-  emitRankingUpdate(req);
 });
 
 router.patch('/:id/reactivate', async (req, res) => {
@@ -120,7 +110,6 @@ router.patch('/:id/reactivate', async (req, res) => {
     .from('players').update({ active: true }).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
-  emitRankingUpdate(req);
 });
 
 module.exports = router;

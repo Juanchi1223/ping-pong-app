@@ -143,14 +143,6 @@ router.post('/', async (req, res) => {
 
     const [withNames] = await attachNames([inserted]);
     res.status(201).json(withNames);
-
-    try {
-      const io = req.app.get('io');
-      io.emit('match:score_update', withNames);
-      io.emit('ranking:update', await getRankings());
-    } catch (emitErr) {
-      console.error('[ws] emit failed after match creation:', emitErr.message);
-    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -198,12 +190,6 @@ router.delete('/:id', async (req, res) => {
     ]);
 
     res.json({ success: true });
-
-    try {
-      req.app.get('io').emit('ranking:update', await getRankings());
-    } catch (emitErr) {
-      console.error('[ws] ranking:update emit failed after match deletion:', emitErr.message);
-    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
