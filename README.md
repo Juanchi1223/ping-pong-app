@@ -11,10 +11,10 @@ npm run dev   # backend on :3001, frontend on :3000
 
 ## Supabase Setup
 
-The app is being migrated from SQLite to Supabase Cloud (Postgres + Realtime).
+This app uses Supabase Cloud (Postgres + Realtime).
 
 1. Create a project at <https://supabase.com/dashboard>.
-2. In **SQL Editor**, run `backend/migrations/001_init.sql` to create the `players` and `matches` tables and enable Realtime.
+2. In **SQL Editor**, run `backend/migrations/001_init.sql` and `backend/migrations/002_identity_by_default.sql` to create the `players` and `matches` tables and enable Realtime.
 3. From **Project Settings → API**, copy:
    - Project URL
    - `anon` public key
@@ -25,8 +25,3 @@ The app is being migrated from SQLite to Supabase Cloud (Postgres + Realtime).
    cp frontend/.env.example frontend/.env
    ```
    Fill in the values.
-5. Smoke-test the backend connection:
-   ```bash
-   node backend/scripts/smoke-supabase.js
-   # → Supabase connection OK. players=0 matches=0
-   ```
