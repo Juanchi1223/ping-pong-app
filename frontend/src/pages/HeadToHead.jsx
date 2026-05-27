@@ -100,12 +100,6 @@ export default function HeadToHead() {
             )}
           </>
         )}
-
-        {!p1Id && !p2Id && (
-          <div style={{ marginTop: 24 }}>
-            <EmptyState icon="⚔️" message="Select two players to compare." />
-          </div>
-        )}
       </div>
     </div>
   );

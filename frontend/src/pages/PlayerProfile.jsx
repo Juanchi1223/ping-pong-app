@@ -78,7 +78,7 @@ export default function PlayerProfile() {
         </div>
 
         {matches.length === 0 ? (
-          <EmptyState icon="📋" message="No matches played yet." />
+          <EmptyState message="No matches played yet." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {matches.map((m) => (
