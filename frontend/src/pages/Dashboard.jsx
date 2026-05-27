@@ -6,7 +6,6 @@ import PageHeader from '../components/ui/PageHeader';
 import BadgeStrip from '../components/ui/BadgeStrip';
 import Podium from '../components/ui/Podium';
 import RankingTable from '../components/ui/RankingTable';
-import LiveIndicator from '../components/common/LiveIndicator';
 import EmptyState from '../components/common/EmptyState';
 import { PageLoader, PageError } from '../components/common/Loader';
 
@@ -44,7 +43,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const { data: liveRankings, connected } = useRealtimeRankings();
+  const { data: liveRankings } = useRealtimeRankings();
   useEffect(() => { if (liveRankings) setPlayers(liveRankings); }, [liveRankings]);
 
   if (loading) return <PageLoader />;
@@ -69,7 +68,7 @@ export default function Dashboard() {
         eyebrow="LEADERBOARD · SEASON 1"
         title="PingPongZS"
         sub={`${players.length} active players · sorted by MMR`}
-        right={<LiveIndicator on={connected} />}
+
       />
 
       <div className="scrollarea" style={{ flex: 1 }}>
