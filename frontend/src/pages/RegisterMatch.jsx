@@ -7,6 +7,7 @@ import EloPreviewCard from '../components/ui/EloPreviewCard';
 import PlayerPickerModal from '../components/ui/PlayerPickerModal';
 import Avatar from '../components/common/Avatar';
 import Delta from '../components/common/Delta';
+import H2HBar from '../components/ui/H2HBar';
 
 const K = 32;
 function calcElo(mmrA, mmrB, aWins) {
@@ -46,12 +47,18 @@ export default function RegisterMatch() {
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
   const [picking, setPicking] = useState(null);
+  const [h2h, setH2h] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => { api.getPlayers().then(setPlayers); }, []);
+
+  useEffect(() => {
+    if (!playerAId || !playerBId || playerAId === playerBId) { setH2h(null); return; }
+    api.getH2H(playerAId, playerBId).then(setH2h).catch(() => setH2h(null));
+  }, [playerAId, playerBId]);
 
   const playerA = players.find(p => p.id === playerAId);
   const playerB = players.find(p => p.id === playerBId);
@@ -125,6 +132,20 @@ export default function RegisterMatch() {
           </div>
           <MatchSlot player={playerB} score={scoreB} setScore={setScoreB} isWinner={!aWon && !tie} onPick={() => setPicking('b')} />
         </div>
+
+        {/* H2H summary */}
+        {h2h && (h2h.p1wins + h2h.p2wins) > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <H2HBar
+              w1={h2h.p1wins}
+              w2={h2h.p2wins}
+              label1={playerA?.name.split(' ')[0] ?? ''}
+              label2={playerB?.name.split(' ')[0] ?? ''}
+              pts1={h2h.p1PointsScored}
+              pts2={h2h.p2PointsScored}
+            />
+          </div>
+        )}
 
         {/* ELO preview */}
         {playerA && playerB && elo && (
