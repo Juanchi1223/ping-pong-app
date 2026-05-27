@@ -32,6 +32,7 @@ function buildBadgesMap(players) {
 
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
+  const [matchCount, setMatchCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function Dashboard() {
       .then(setPlayers)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
+    api.getMatches().then(m => setMatchCount(m.length)).catch(() => {});
   }, []);
 
   const { data: liveRankings } = useRealtimeRankings();
@@ -67,7 +69,7 @@ export default function Dashboard() {
       <PageHeader
         eyebrow="LEADERBOARD · SEASON 1"
         title="PingPongZS"
-        sub={`${players.length} active players · sorted by MMR`}
+        sub={`${players.length} active players · ${matchCount} matches played`}
 
       />
 

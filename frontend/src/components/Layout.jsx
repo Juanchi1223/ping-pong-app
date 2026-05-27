@@ -2,11 +2,11 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Icons } from './common/Icons';
 
 const navItems = [
-  { to: '/',        label: 'Rankings',  icon: Icons.trophy,  exact: true },
-  { to: '/history', label: 'History',   icon: Icons.clock },
-  { to: '/h2h',     label: 'H2H',       icon: Icons.swords },
-  { to: '/register',label: 'New Match', icon: Icons.plus, center: true },
-  { to: '/players', label: 'Players',   icon: Icons.users },
+    { to: '/',        label: 'Rankings',  icon: Icons.trophy,  exact: true },
+    { to: '/h2h',     label: 'H2H',       icon: Icons.swords },
+    { to: '/register',label: 'New Match', icon: Icons.plus, center: true },
+    { to: '/history', label: 'History',   icon: Icons.clock },
+    { to: '/players', label: 'Players',   icon: Icons.users },
 ];
 
 export default function Layout() {
