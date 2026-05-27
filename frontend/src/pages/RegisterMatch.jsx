@@ -1,57 +1,77 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import PageHeader from '../components/ui/PageHeader';
+import ScoreStepper from '../components/ui/ScoreStepper';
+import EloPreviewCard from '../components/ui/EloPreviewCard';
+import PlayerPickerModal from '../components/ui/PlayerPickerModal';
+import Avatar from '../components/common/Avatar';
+import Delta from '../components/common/Delta';
 
 const K = 32;
-function previewElo(mmrA, mmrB, aWins) {
-  const expectedA = 1 / (1 + Math.pow(10, (mmrB - mmrA) / 400));
-  const expectedB = 1 - expectedA;
-  const actualA = aWins ? 1 : 0;
-  const actualB = 1 - actualA;
-  return {
-    deltaA: Math.round(K * (actualA - expectedA)),
-    deltaB: Math.round(K * (actualB - expectedB)),
-  };
+function calcElo(mmrA, mmrB, aWins) {
+  const exp = 1 / (1 + Math.pow(10, (mmrB - mmrA) / 400));
+  const delta = Math.round(K * ((aWins ? 1 : 0) - exp));
+  return { deltaA: delta, deltaB: -delta };
+}
+
+function MatchSlot({ player, score, setScore, isWinner, onPick }) {
+  return (
+    <div className="card-row" style={{
+      flex: 1, padding: '12px 12px 14px', borderRadius: 4,
+      border: isWinner ? '1px solid var(--accent)' : '1px solid var(--border)',
+      background: isWinner ? 'linear-gradient(180deg, rgba(255,61,84,0.08), var(--surface))' : 'var(--surface)',
+      position: 'relative',
+    }}>
+      <button onClick={onPick} style={{ width: '100%', textAlign: 'center', padding: 0, background: 'none', border: 0, cursor: 'pointer' }}>
+        <Avatar name={player?.name ?? '?'} size={48} />
+        <div className="disp" style={{ fontSize: 15, marginTop: 8, lineHeight: 1.1 }}>
+          {player ? player.name : 'Select player'}
+        </div>
+        {player && (
+          <div className="label-eyebrow" style={{ fontSize: 9, marginTop: 2, color: 'var(--text-3)' }}>
+            {player.department} · {player.mmr} MMR
+          </div>
+        )}
+      </button>
+      <ScoreStepper value={score} onChange={setScore} isWinner={isWinner} />
+    </div>
+  );
 }
 
 export default function RegisterMatch() {
   const [players, setPlayers] = useState([]);
-  const [playerAId, setPlayerAId] = useState('');
-  const [playerBId, setPlayerBId] = useState('');
-  const [scoreA, setScoreA] = useState('');
-  const [scoreB, setScoreB] = useState('');
+  const [playerAId, setPlayerAId] = useState(null);
+  const [playerBId, setPlayerBId] = useState(null);
+  const [scoreA, setScoreA] = useState(0);
+  const [scoreB, setScoreB] = useState(0);
+  const [picking, setPicking] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    api.getPlayers().then(setPlayers);
-  }, []);
+  useEffect(() => { api.getPlayers().then(setPlayers); }, []);
 
-  const playerA = players.find(p => p.id == playerAId);
-  const playerB = players.find(p => p.id == playerBId);
+  const playerA = players.find(p => p.id === playerAId);
+  const playerB = players.find(p => p.id === playerBId);
+  const tie = scoreA === scoreB;
+  const aWon = scoreA > scoreB;
+  const valid = playerAId && playerBId && playerAId !== playerBId && !tie;
 
-  const preview = useMemo(() => {
-    if (!playerA || !playerB || scoreA === '' || scoreB === '' || Number(scoreA) === Number(scoreB)) return null;
-    return previewElo(playerA.mmr, playerB.mmr, Number(scoreA) > Number(scoreB));
+  const elo = useMemo(() => {
+    if (!playerA || !playerB || tie) return null;
+    return calcElo(playerA.mmr, playerB.mmr, aWon);
   }, [playerA, playerB, scoreA, scoreB]);
 
-  const winner = scoreA !== '' && scoreB !== '' && Number(scoreA) !== Number(scoreB)
-    ? Number(scoreA) > Number(scoreB) ? 'a' : 'b'
-    : null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
     if (!playerAId || !playerBId) { setError('Select both players'); return; }
     if (playerAId === playerBId) { setError('Players must be different'); return; }
-    if (scoreA === '' || scoreB === '') { setError('Enter both scores'); return; }
-    if (Number(scoreA) === Number(scoreB)) { setError('Ties are not allowed'); return; }
-
+    if (tie) { setError('Ties are not allowed'); return; }
     setSaving(true);
     try {
-      await api.createMatch({ player_a_id: playerAId, player_b_id: playerBId, score_a: Number(scoreA), score_b: Number(scoreB) });
+      await api.createMatch({ player_a_id: playerAId, player_b_id: playerBId, score_a: scoreA, score_b: scoreB });
       setSaved(true);
       setTimeout(() => navigate('/'), 1200);
     } catch (err) {
@@ -61,175 +81,97 @@ export default function RegisterMatch() {
     }
   };
 
-  const reset = () => { setPlayerAId(''); setPlayerBId(''); setScoreA(''); setScoreB(''); setError(null); setSaved(false); };
+  const reset = () => { setPlayerAId(null); setPlayerBId(null); setScoreA(0); setScoreB(0); setError(null); setSaved(false); };
 
   if (saved) {
     return (
-      <div className="p-4 md:p-8 max-w-xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="text-5xl">🏆</div>
-        <div className="font-display text-3xl text-accent tracking-wide">Match Saved!</div>
-        <div className="text-white/40 text-sm font-body">Redirecting to rankings...</div>
+      <div className="rise" style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: 18, minHeight: '60vh' }}>
+        <div className="label-eyebrow" style={{ color: 'var(--accent)' }}>● MATCH SAVED</div>
+        <div className="disp-ex" style={{ fontSize: 52, lineHeight: 0.9, textTransform: 'uppercase' }}>
+          {aWon ? playerA?.name.split(' ')[0] : playerB?.name.split(' ')[0]}<br/>WINS
+        </div>
+        <div className="num" style={{ fontSize: 32, fontWeight: 600 }}>
+          {scoreA} <span style={{ color: 'var(--text-3)' }}>—</span> {scoreB}
+        </div>
+        {elo && (
+          <div style={{ display: 'flex', gap: 18, marginTop: 8 }}>
+            <div>
+              <div className="label-eyebrow">{playerA?.name.split(' ')[0]}</div>
+              <div style={{ marginTop: 4 }}><Delta value={elo.deltaA} large /></div>
+            </div>
+            <div>
+              <div className="label-eyebrow">{playerB?.name.split(' ')[0]}</div>
+              <div style={{ marginTop: 4 }}><Delta value={elo.deltaB} large /></div>
+            </div>
+          </div>
+        )}
+        <button className="btn-primary pressable" onClick={() => navigate('/')} style={{ marginTop: 12 }}>
+          VIEW RANKINGS
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-xl mx-auto">
-      <div className="mb-6 md:mb-8">
-        <h1 className="font-display text-3xl md:text-4xl text-white tracking-wide">New Match</h1>
-        <p className="text-white/35 text-sm font-body mt-1">Register a match result and update MMR</p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      <PageHeader eyebrow="NEW RECORD" title="Register match" />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Player selectors */}
-        <div className="card p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-3 sm:gap-4 items-end">
-            {/* Player A */}
-            <div>
-              <label className="label">Player A</label>
-              <div className="relative">
-                <select
-                  className="select pr-8"
-                  value={playerAId}
-                  onChange={e => setPlayerAId(e.target.value)}
-                >
-                  <option value="">Select player...</option>
-                  {players.filter(p => p.id != playerBId).map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.mmr})</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-              </div>
-              {playerA && (
-                <div className="mt-1.5 text-white/35 text-[11px] font-mono">MMR: {playerA.mmr}</div>
-              )}
-            </div>
-
-            {/* VS */}
-            <div className="vs-divider hidden sm:block pb-6">VS</div>
-
-            {/* Player B */}
-            <div>
-              <label className="label">Player B</label>
-              <div className="relative">
-                <select
-                  className="select pr-8"
-                  value={playerBId}
-                  onChange={e => setPlayerBId(e.target.value)}
-                >
-                  <option value="">Select player...</option>
-                  {players.filter(p => p.id != playerAId).map(p => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.mmr})</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-              </div>
-              {playerB && (
-                <div className="mt-1.5 text-white/35 text-[11px] font-mono">MMR: {playerB.mmr}</div>
-              )}
-            </div>
+      <div className="scrollarea" style={{ flex: 1, padding: '14px 16px 20px' }}>
+        {/* Match slots */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'stretch', position: 'relative' }}>
+          <MatchSlot player={playerA} score={scoreA} setScore={setScoreA} isWinner={aWon && !tie} onPick={() => setPicking('a')} />
+          <div style={{ position: 'absolute', top: '36%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }}>
+            <div className="disp-ex" style={{ fontSize: 13, color: 'var(--text-3)', background: 'var(--bg)', padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 2 }}>VS</div>
           </div>
+          <MatchSlot player={playerB} score={scoreB} setScore={setScoreB} isWinner={!aWon && !tie} onPick={() => setPicking('b')} />
         </div>
 
-        {/* Score inputs */}
-        <div className="card p-5">
-          <label className="label mb-4 block">Score</label>
-          <div className="grid grid-cols-[1fr,auto,1fr] gap-4 sm:gap-6 items-center">
-            <div className="flex flex-col items-center gap-2">
-              {playerA && <div className="text-white/40 text-xs font-body truncate max-w-full">{playerA.name}</div>}
-              <div className={`relative ${winner === 'a' ? 'after:absolute after:inset-0 after:rounded after:bg-accent/5' : ''}`}>
-                <input
-                  type="number"
-                  min="0"
-                  className={`score-input ${winner === 'a' ? 'border-b-accent' : ''}`}
-                  style={{ borderBottomColor: winner === 'a' ? 'var(--accent)' : undefined }}
-                  value={scoreA}
-                  onChange={e => setScoreA(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              {winner === 'a' && <WinLabel />}
-            </div>
-
-            <div className="vs-divider text-center">:</div>
-
-            <div className="flex flex-col items-center gap-2">
-              {playerB && <div className="text-white/40 text-xs font-body truncate max-w-full">{playerB.name}</div>}
-              <input
-                type="number"
-                min="0"
-                className={`score-input`}
-                style={{ borderBottomColor: winner === 'b' ? 'var(--accent)' : undefined }}
-                value={scoreB}
-                onChange={e => setScoreB(e.target.value)}
-                placeholder="0"
-              />
-              {winner === 'b' && <WinLabel />}
-            </div>
-          </div>
-
-          {scoreA !== '' && scoreB !== '' && Number(scoreA) === Number(scoreB) && (
-            <p className="text-center text-fire text-xs font-mono mt-3">Ties are not allowed</p>
-          )}
-        </div>
-
-        {/* ELO Preview */}
-        {preview && playerA && playerB && (
-          <div className="card p-4 border-accent/10 bg-accent/[0.03]">
-            <div className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-3">MMR Preview</div>
-            <div className="grid grid-cols-2 gap-4">
-              <EloPreviewCard name={playerA.name} mmr={playerA.mmr} delta={preview.deltaA} />
-              <EloPreviewCard name={playerB.name} mmr={playerB.mmr} delta={preview.deltaB} />
-            </div>
+        {/* ELO preview */}
+        {playerA && playerB && elo && (
+          <div style={{ marginTop: 16 }}>
+            <EloPreviewCard a={playerA} b={playerB} deltaA={elo.deltaA} deltaB={elo.deltaB} />
           </div>
         )}
 
-        {/* Error */}
+        {/* Validation messages */}
+        {tie && scoreA > 0 && (
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(251,113,133,0.08)', border: '1px solid var(--loss)', borderRadius: 4, color: 'var(--loss)', fontSize: 12.5 }}>
+            ⚠ Ties aren't allowed. Adjust a score.
+          </div>
+        )}
+        {playerAId && playerBId && playerAId === playerBId && (
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(251,113,133,0.08)', border: '1px solid var(--loss)', borderRadius: 4, color: 'var(--loss)', fontSize: 12.5 }}>
+            ⚠ Players must be different.
+          </div>
+        )}
         {error && (
-          <div className="card p-3 border-loss/20 bg-loss/[0.05]">
-            <p className="text-loss text-xs font-mono">{error}</p>
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(251,113,133,0.08)', border: '1px solid var(--loss)', borderRadius: 4, color: 'var(--loss)', fontSize: 12.5 }}>
+            ⚠ {error}
           </div>
         )}
 
-        {/* Submit */}
-        <div className="flex gap-3">
-          <button type="button" onClick={reset} className="btn-ghost px-5">Reset</button>
-          <button type="submit" disabled={saving} className="btn-primary flex-1 py-3 text-base">
-            {saving ? 'Saving...' : 'Save Match'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
+        <button
+          disabled={!valid || saving}
+          onClick={handleSubmit}
+          className="btn-primary pressable"
+          style={{ marginTop: 16, width: '100%', height: 52, fontSize: 18, letterSpacing: '0.14em' }}
+        >
+          {saving ? 'SAVING…' : 'RECORD MATCH'}
+        </button>
 
-function EloPreviewCard({ name, mmr, delta }) {
-  const isPos = delta > 0;
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="text-white/60 text-xs font-body truncate">{name}</div>
-        <div className="mmr-display text-white/80 text-sm">{mmr} → {mmr + delta}</div>
+        <button onClick={reset} style={{ marginTop: 10, width: '100%', padding: 10, color: 'var(--text-3)', fontSize: 12, background: 'none', border: 0, cursor: 'pointer' }}>
+          Clear form
+        </button>
       </div>
-      <div className={`font-mono text-sm font-bold ${isPos ? 'text-accent' : 'text-loss'}`}>
-        {isPos ? '+' : ''}{delta}
-      </div>
+
+      {picking && (
+        <PlayerPickerModal
+          players={players}
+          exclude={picking === 'a' ? playerBId : playerAId}
+          onPick={id => { picking === 'a' ? setPlayerAId(id) : setPlayerBId(id); setPicking(null); }}
+          onClose={() => setPicking(null)}
+        />
+      )}
     </div>
-  );
-}
-
-function WinLabel() {
-  return (
-    <span className="text-[10px] font-mono text-accent uppercase tracking-widest border border-accent/25 bg-accent/10 px-2 py-0.5 rounded">
-      Winner
-    </span>
-  );
-}
-
-function ChevronDown({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
   );
 }

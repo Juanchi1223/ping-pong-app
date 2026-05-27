@@ -1,62 +1,56 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Icons } from './common/Icons';
 
 const navItems = [
-  { to: '/', label: 'Rankings', icon: TrophyIcon, exact: true },
-  { to: '/history', label: 'History', icon: ClockIcon },
-  { to: '/h2h', label: 'H2H', icon: SwordsIcon },
-  { to: '/register', label: 'New Match', icon: PlusIcon },
-  { to: '/players', label: 'Players', icon: UsersIcon },
+  { to: '/',        label: 'Rankings',  icon: Icons.trophy,  exact: true },
+  { to: '/history', label: 'History',   icon: Icons.clock },
+  { to: '/h2h',     label: 'H2H',       icon: Icons.swords },
+  { to: '/register',label: 'New Match', icon: Icons.plus, center: true },
+  { to: '/players', label: 'Players',   icon: Icons.users },
 ];
 
 export default function Layout() {
-  return (
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-      {/* Mobile header */}
-      <header className="md:hidden flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06] bg-surface/80 backdrop-blur-sm flex-shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-          <span className="text-sm">🏓</span>
-        </div>
-        <div className="font-display text-lg text-white tracking-wide leading-none">PingPongZS</div>
-      </header>
+  const navigate = useNavigate();
 
+  return (
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 flex-shrink-0 flex-col border-r border-white/[0.06] bg-surface/60 backdrop-blur-sm">
-        {/* Logo */}
-        <div className="px-5 py-6 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <span className="text-base">🏓</span>
+      <aside className="hidden md:flex flex-col flex-shrink-0" style={{ width: 200, borderRight: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 4, background: 'rgba(255,61,84,0.15)', border: '1px solid rgba(255,61,84,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+              🏓
             </div>
             <div>
-              <div className="font-display text-xl text-white tracking-wide leading-none">PingPongZS</div>
-              <div className="text-white/25 text-[10px] font-mono mt-0.5 tracking-widest uppercase">Rankings</div>
+              <div className="disp-ex" style={{ fontSize: 18, lineHeight: 1 }}>PingPongZS</div>
+              <div className="label-eyebrow" style={{ marginTop: 2, fontSize: 9 }}>Rankings</div>
             </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {navItems.map(({ to, label, icon: Icon, exact }) => (
+        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.filter(n => !n.center).map(({ to, label, icon, exact }) => (
             <NavLink
               key={to}
               to={to}
               end={exact}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body transition-all duration-150 relative group ${isActive
-                  ? 'nav-active bg-accent/[0.07] text-accent font-medium'
-                  : 'text-white/45 hover:text-white/70 hover:bg-white/[0.04]'
-                }`
+                `flex items-center gap-3 px-3 py-2.5 rounded text-sm font-body transition-all duration-150 relative ${isActive ? 'nav-active' : ''}`
               }
+              style={({ isActive }) => ({
+                background: isActive ? 'rgba(255,61,84,0.07)' : 'transparent',
+                color: isActive ? 'var(--accent)' : 'var(--text-2)',
+                fontWeight: isActive ? 500 : 400,
+              })}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              {icon({ width: 16, height: 16, style: { flexShrink: 0 } })}
               {label}
             </NavLink>
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-white/[0.06]">
-          <div className="text-white/20 text-[10px] font-mono tracking-widest uppercase">K-Factor = 32</div>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+          <div className="label-eyebrow" style={{ fontSize: 9, color: 'var(--text-3)' }}>K-Factor = 32</div>
         </div>
       </aside>
 
@@ -68,71 +62,40 @@ export default function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-surface/95 backdrop-blur-md border-t border-white/[0.06] flex items-center justify-around px-2 py-1.5 z-50">
-        {navItems.map(({ to, label, icon: Icon, exact }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={exact}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-body transition-all duration-150 min-w-0 ${isActive
-                ? 'text-accent'
-                : 'text-white/35'
-              }`
-            }
-          >
-            <Icon className="w-5 h-5" />
-            <span className="truncate">{label}</span>
-          </NavLink>
-        ))}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 flex items-center justify-around px-2 py-1.5 z-50" style={{ background: 'rgba(17,17,24,0.96)', backdropFilter: 'blur(12px)', borderTop: '1px solid var(--border)' }}>
+        {navItems.map(({ to, label, icon, exact, center }) => {
+          if (center) {
+            return (
+              <button
+                key={to}
+                onClick={() => navigate(to)}
+                className="pressable"
+                style={{
+                  width: 48, height: 48, borderRadius: 6,
+                  background: 'var(--accent)', color: '#0a0a0d',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: 0, cursor: 'pointer',
+                  boxShadow: '0 6px 18px var(--accent-2)',
+                }}
+              >
+                {icon({ width: 22, height: 22 })}
+              </button>
+            );
+          }
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={exact}
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded text-[10px] font-body transition-all duration-150"
+              style={({ isActive }) => ({ color: isActive ? 'var(--accent)' : 'var(--text-3)' })}
+            >
+              {icon({ width: 20, height: 20 })}
+              <span className="truncate">{label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
     </div>
-  );
-}
-
-function TrophyIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 010-5H6" /><path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
-      <path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0012 0V2z" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
-    </svg>
-  );
-}
-
-function UsersIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  );
-}
-
-function ClockIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function SwordsIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" y1="19" x2="19" y2="13" />
-      <line x1="16" y1="16" x2="20" y2="20" /><line x1="19" y1="21" x2="21" y2="19" />
-      <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" /><line x1="5" y1="14" x2="9" y2="18" />
-      <line x1="7" y1="11" x2="11" y2="15" /><line x1="5" y1="19" x2="3" y2="21" />
-    </svg>
   );
 }

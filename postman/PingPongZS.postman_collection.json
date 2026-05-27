@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "PingPongZS API",
+    "description": "Colección completa de la API de PingPongZS — sistema de ranking de ping pong con algoritmo Elo (MMR).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [],
+  "item": [
+    {
+      "name": "Players",
+      "description": "Endpoints de gestión de jugadores.",
+      "item": [
+        {
+          "name": "Get Rankings (active players)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players"]
+            },
+            "description": "Devuelve los jugadores activos ordenados por MMR, con badges calculados."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Players (incl. inactive)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", "all"]
+            },
+            "description": "Devuelve todos los jugadores (activos e inactivos) ordenados por MMR."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Player by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players/{{player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", "{{player_id}}"]
+            },
+            "description": "Devuelve los datos de un jugador específico por su ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Player",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Jugador\",\n  \"department\": \"Ventas\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/players",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players"]
+            },
+            "description": "Crea un nuevo jugador. El nombre es obligatorio; el departamento es opcional."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Player",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nombre Actualizado\",\n  \"department\": \"Marketing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/players/{{player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", "{{player_id}}"]
+            },
+            "description": "Actualiza nombre y/o departamento de un jugador."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete (Deactivate) Player",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players/{{player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", "{{player_id}}"]
+            },
+            "description": "Soft-delete: marca al jugador como inactivo (active = false)."
+          },
+          "response": []
+        },
+        {
+          "name": "Reactivate Player",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players/{{player_id}}/reactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", "{{player_id}}", "reactivate"]
+            },
+            "description": "Reactiva un jugador previamente desactivado."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Matches",
+      "description": "Endpoints de gestión de partidos.",
+      "item": [
+        {
+          "name": "Get All Matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/matches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches"]
+            },
+            "description": "Devuelve todos los partidos, ordenados por fecha (más reciente primero), con nombres de jugadores."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Matches by Player",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/matches/player/{{player_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches", "player", "{{player_id}}"]
+            },
+            "description": "Devuelve todos los partidos en los que participó un jugador específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Head-to-Head",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/matches/h2h/{{player_id_1}}/{{player_id_2}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches", "h2h", "{{player_id_1}}", "{{player_id_2}}"]
+            },
+            "description": "Devuelve estadísticas head-to-head entre dos jugadores: partidos, victorias de cada uno y puntos anotados."
+          },
+          "response": []
+        },
+        {
+          "name": "Register Match",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"player_a_id\": {{player_id_1}},\n  \"player_b_id\": {{player_id_2}},\n  \"score_a\": 11,\n  \"score_b\": 7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/matches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches"]
+            },
+            "description": "Registra un nuevo partido. Calcula automáticamente el delta de MMR (Elo) y actualiza stats de ambos jugadores. No se permiten empates ni scores negativos."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Match",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/matches/{{match_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches", "{{match_id}}"]
+            },
+            "description": "Elimina un partido y revierte los cambios de MMR, wins, losses, points y streaks de ambos jugadores."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
