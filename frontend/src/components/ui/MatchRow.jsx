@@ -10,16 +10,45 @@ function fmtDate(iso) {
 
 export default function MatchRow({ match: m, perspectiveId, mode = 'history', onDelete, onOpenPlayer, deletingId }) {
   if (!m) return null;
-  const isA = m.player_a_id === perspectiveId;
+  const is2v2 = Boolean(m.player_a2_id || m.player_b2_id) || m.match_type === '2v2' || m.mode === '2v2';
+
 
   if (mode === 'profile') {
-    const myScore  = isA ? m.score_a : m.score_b;
-    const oppScore = isA ? m.score_b : m.score_a;
+    const isTeamA = Number(m.player_a_id) === Number(perspectiveId) || Number(m.player_a2_id) === Number(perspectiveId);
+    const myScore = isTeamA ? m.score_a : m.score_b;
+    const oppScore = isTeamA ? m.score_b : m.score_a;
     const won = myScore > oppScore;
-    const delta = isA ? m.mmr_delta_a : m.mmr_delta_b;
-    const oppId   = isA ? m.player_b_id : m.player_a_id;
-    const oppName = isA ? m.player_b_name : m.player_a_name;
+    const delta = isTeamA ? m.mmr_delta_a : m.mmr_delta_b;
     const isDeleting = deletingId === m.id;
+
+    let titleNode;
+    if (is2v2) {
+      const teammateName = isTeamA
+        ? (Number(m.player_a_id) === Number(perspectiveId) ? m.player_a2_name : m.player_a_name)
+        : (Number(m.player_b_id) === Number(perspectiveId) ? m.player_b2_name : m.player_b_name);
+      const oppNames = isTeamA
+        ? `${m.player_b_name || 'Player'} & ${m.player_b2_name || 'Player'}`
+        : `${m.player_a_name || 'Player'} & ${m.player_a2_name || 'Player'}`;
+
+      titleNode = (
+        <div>
+          <div className="disp" style={{ fontSize: 13, lineHeight: 1.1, color: 'var(--text)' }}>
+            vs <span style={{ color: 'var(--text)' }}>{oppNames}</span>
+          </div>
+          <div className="label-eyebrow" style={{ fontSize: 8.5, color: 'var(--accent)', marginTop: 1 }}>
+            w/ {teammateName || 'Teammate'} · 2V2
+          </div>
+        </div>
+      );
+    } else {
+      const oppId = isTeamA ? m.player_b_id : m.player_a_id;
+      const oppName = isTeamA ? m.player_b_name : m.player_a_name;
+      titleNode = (
+        <Link to={`/players/${oppId}`} style={{ textDecoration: 'none' }}>
+          <div className="disp" style={{ fontSize: 13, lineHeight: 1.1, color: 'var(--text)' }}>vs {oppName}</div>
+        </Link>
+      );
+    }
 
     return (
       <div className="card-row" style={{
@@ -35,10 +64,10 @@ export default function MatchRow({ match: m, perspectiveId, mode = 'history', on
           fontFamily: "'Saira Condensed', sans-serif", fontWeight: 700, fontSize: 14,
         }}>{won ? 'W' : 'L'}</div>
         <div style={{ minWidth: 0 }}>
-          <Link to={`/players/${oppId}`} style={{ textDecoration: 'none' }}>
-            <div className="disp" style={{ fontSize: 13, lineHeight: 1.1, color: 'var(--text)' }}>vs {oppName}</div>
-          </Link>
-          <div className="label-eyebrow" style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 1 }}>{fmtDate(m.played_at)}</div>
+          {titleNode}
+          <div className="label-eyebrow" style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 1 }}>
+            {fmtDate(m.played_at)} {m.season ? `· S${m.season}` : ''}
+          </div>
         </div>
         <div className="num" style={{ fontSize: 14, fontWeight: 600 }}>{myScore}–{oppScore}</div>
         <Delta value={delta} />
@@ -56,11 +85,11 @@ export default function MatchRow({ match: m, perspectiveId, mode = 'history', on
   }
 
   if (mode === 'h2h') {
-    const p1IsA = m.player_a_id === perspectiveId;
-    const myScore  = p1IsA ? m.score_a : m.score_b;
-    const oppScore = p1IsA ? m.score_b : m.score_a;
-    const myDelta  = p1IsA ? m.mmr_delta_a : m.mmr_delta_b;
-    const oppDelta = p1IsA ? m.mmr_delta_b : m.mmr_delta_a;
+    const isTeamA = Number(m.player_a_id) === Number(perspectiveId) || Number(m.player_a2_id) === Number(perspectiveId);
+    const myScore = isTeamA ? m.score_a : m.score_b;
+    const oppScore = isTeamA ? m.score_b : m.score_a;
+    const myDelta = isTeamA ? m.mmr_delta_a : m.mmr_delta_b;
+    const oppDelta = isTeamA ? m.mmr_delta_b : m.mmr_delta_a;
 
     return (
       <div className="card-row" style={{ padding: '10px 12px', borderRadius: 4, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8 }}>
@@ -69,7 +98,9 @@ export default function MatchRow({ match: m, perspectiveId, mode = 'history', on
           <Delta value={myDelta} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span className="label-eyebrow" style={{ fontSize: 8.5 }}>{fmtDate(m.played_at)}</span>
+          <span className="label-eyebrow" style={{ fontSize: 8.5 }}>
+            {fmtDate(m.played_at)} {is2v2 ? '· 2v2' : ''}
+          </span>
           <span className="disp" style={{ fontSize: 10, color: 'var(--text-3)' }}>—</span>
         </div>
         <div>
@@ -82,11 +113,25 @@ export default function MatchRow({ match: m, perspectiveId, mode = 'history', on
 
   // mode === 'history'
   const aWon = m.score_a > m.score_b;
-  const winnerName = aWon ? m.player_a_name : m.player_b_name;
-  const winnerId   = aWon ? m.player_a_id : m.player_b_id;
-  const loserName  = aWon ? m.player_b_name : m.player_a_name;
-  const winnerDelta = aWon ? m.mmr_delta_a : m.mmr_delta_b;
   const d = new Date(m.played_at);
+
+  let winnerDisplay;
+  let loserDisplay;
+  let winnerId;
+
+  if (is2v2) {
+    const teamANames = `${m.player_a_name || 'P1'} & ${m.player_a2_name || 'P2'}`;
+    const teamBNames = `${m.player_b_name || 'P3'} & ${m.player_b2_name || 'P4'}`;
+    winnerDisplay = aWon ? teamANames : teamBNames;
+    loserDisplay = aWon ? teamBNames : teamANames;
+    winnerId = aWon ? m.player_a_id : m.player_b_id;
+  } else {
+    winnerDisplay = aWon ? m.player_a_name : m.player_b_name;
+    loserDisplay = aWon ? m.player_b_name : m.player_a_name;
+    winnerId = aWon ? m.player_a_id : m.player_b_id;
+  }
+
+  const winnerDelta = aWon ? m.mmr_delta_a : m.mmr_delta_b;
 
   return (
     <div className="card-row" style={{ padding: '10px 12px', borderRadius: 4, display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
@@ -98,13 +143,18 @@ export default function MatchRow({ match: m, perspectiveId, mode = 'history', on
         onClick={() => onOpenPlayer?.(winnerId)}
         style={{ textAlign: 'left', padding: 0, background: 'none', border: 0, cursor: 'pointer' }}
       >
-        <div className="disp" style={{ fontSize: 13, lineHeight: 1.1 }}>
-          <span style={{ color: 'var(--accent)' }}>{winnerName}</span>
+        <div className="disp" style={{ fontSize: 13, lineHeight: 1.1, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ color: 'var(--accent)' }}>{winnerDisplay}</span>
           <span style={{ color: 'var(--text-3)' }}> def </span>
-          <span style={{ color: 'var(--text)' }}>{loserName}</span>
+          <span style={{ color: 'var(--text)' }}>{loserDisplay}</span>
+          {is2v2 && (
+            <span className="label-eyebrow" style={{ fontSize: 8, padding: '1px 4px', background: 'rgba(255,255,255,0.06)', borderRadius: 2, border: '1px solid var(--border)' }}>
+              2V2
+            </span>
+          )}
         </div>
         <div className="num" style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
-          {aWon ? m.score_a : m.score_b}–{aWon ? m.score_b : m.score_a}
+          {aWon ? m.score_a : m.score_b}–{aWon ? m.score_b : m.score_a} {m.season ? `· Season ${m.season}` : ''}
         </div>
       </button>
       <Delta value={winnerDelta} />

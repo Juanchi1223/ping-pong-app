@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const playersRouter = require('./routes/players');
 const matchesRouter = require('./routes/matches');
+const seasonsRouter = require('./routes/seasons');
 
 const app = express();
 
@@ -11,9 +12,14 @@ app.use(express.json());
 
 app.use('/api/players', playersRouter);
 app.use('/api/matches', matchesRouter);
+app.use('/api/seasons', seasonsRouter);
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-  console.log(`PingPongZS backend running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`PingPongZS backend running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
