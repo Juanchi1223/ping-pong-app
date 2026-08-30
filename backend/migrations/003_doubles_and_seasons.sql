@@ -3,6 +3,7 @@
 -- 1. Extend matches table for 2v2 doubles and seasons
 alter table matches add column if not exists player_a2_id bigint references players(id) on delete restrict;
 alter table matches add column if not exists player_b2_id bigint references players(id) on delete restrict;
+alter table matches add column if not exists mode text not null default '1v1';
 alter table matches add column if not exists match_type text not null default '1v1';
 alter table matches add column if not exists season integer not null default 1;
 
@@ -10,23 +11,28 @@ create index if not exists matches_player_a2_idx on matches(player_a2_id);
 create index if not exists matches_player_b2_idx on matches(player_b2_id);
 create index if not exists matches_season_idx    on matches(season);
 create index if not exists matches_type_idx      on matches(match_type);
+create index if not exists matches_mode_idx      on matches(mode);
 
 -- 2. Seasons table to track active and archived seasons
 create table if not exists seasons (
   id           integer primary key,
   name         text not null,
+  active       boolean not null default false,
   status       text not null default 'active' check (status in ('active', 'archived')),
   baseline_mmr integer not null default 1200,
+  started_at   timestamptz not null default now(),
+  ended_at     timestamptz,
   created_at   timestamptz not null default now()
 );
 
 -- Seed Season 1 (archived) and Season 2 (active)
-insert into seasons (id, name, status, baseline_mmr)
+insert into seasons (id, name, active, status, baseline_mmr)
 values
-  (1, 'Season 1', 'archived', 1000),
-  (2, 'Season 2', 'active', 1200)
+  (1, 'Season 1', false, 'archived', 1000),
+  (2, 'Season 2', true, 'active', 1200)
 on conflict (id) do update set
   name = excluded.name,
+  active = excluded.active,
   status = excluded.status,
   baseline_mmr = excluded.baseline_mmr;
 
