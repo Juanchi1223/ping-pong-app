@@ -84,9 +84,11 @@ export default function Dashboard() {
           border: 0,
           cursor: 'pointer',
           fontWeight: selectedSeason === 2 ? 700 : 500,
+          whiteSpace: 'nowrap',
         }}
       >
-        SEASON 2 (ACTIVE)
+        <span className="hidden sm:inline">SEASON 2 (ACTIVE)</span>
+        <span className="sm:hidden">S2 (ACTIVE)</span>
       </button>
       <button
         type="button"
@@ -100,9 +102,11 @@ export default function Dashboard() {
           border: 0,
           cursor: 'pointer',
           fontWeight: selectedSeason === 1 ? 700 : 500,
+          whiteSpace: 'nowrap',
         }}
       >
-        SEASON 1 (ARCHIVE)
+        <span className="hidden sm:inline">SEASON 1 (ARCHIVE)</span>
+        <span className="sm:hidden">S1 (ARCHIVE)</span>
       </button>
     </div>
   );
@@ -114,6 +118,8 @@ export default function Dashboard() {
         title="PingPongZS"
         sub={`${players.length} players · ${matchCount} matches recorded in Season ${selectedSeason}`}
         right={seasonSelector}
+        hideEyebrowOnMobile
+        hideSubOnMobile
       />
 
       <div className="scrollarea" style={{ flex: 1 }}>
