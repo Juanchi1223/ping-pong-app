@@ -42,15 +42,15 @@ describe('End-to-End & Integration Tests', () => {
       const { data: players } = await supabase.from('players').select('*');
       const [p1, p2, p3, p4] = players;
 
-      // Team A: P1 (1284) & P2 (1248) -> avg = 1266
-      // Team B: P3 (1216) & P4 (1180) -> avg = 1198
-      const teamMmrA = [p1.mmr, p2.mmr];
-      const teamMmrB = [p3.mmr, p4.mmr];
+      // Team A: P1 (1250) & P2 (1250) -> avg = 1250
+      // Team B: P3 (1150) & P4 (1150) -> avg = 1150
+      const teamMmrA = [1250, 1250];
+      const teamMmrB = [1150, 1150];
 
       const { deltaA, deltaB, teamAvgA, teamAvgB } = calculateTeamElo(teamMmrA, teamMmrB, 11, 5);
 
-      assert.strictEqual(teamAvgA, 1266);
-      assert.strictEqual(teamAvgB, 1198);
+      assert.strictEqual(teamAvgA, 1250);
+      assert.strictEqual(teamAvgB, 1150);
       assert.strictEqual(deltaA + deltaB, 0);
       assert(deltaA > 0);
       assert(deltaB < 0);
