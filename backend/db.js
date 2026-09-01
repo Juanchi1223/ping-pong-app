@@ -208,18 +208,18 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && !process.env.USE_MOCK_DB) {
   function getInitialStore() {
     return {
       players: [
-        { id: 1, name: 'Carmen Wu', department: 'Design', mmr: 1284, wins: 8, losses: 3, points_scored: 114, points_conceded: 78, current_win_streak: 3, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
-        { id: 2, name: 'Alex Rivera', department: 'Engineering', mmr: 1248, wins: 7, losses: 4, points_scored: 102, points_conceded: 86, current_win_streak: 2, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
-        { id: 3, name: 'Elena Rostova', department: 'Product', mmr: 1216, wins: 6, losses: 5, points_scored: 98, points_conceded: 92, current_win_streak: 0, current_loss_streak: 1, active: true, created_at: new Date().toISOString() },
-        { id: 4, name: 'Marcus Chen', department: 'Sales', mmr: 1180, wins: 4, losses: 6, points_scored: 82, points_conceded: 96, current_win_streak: 0, current_loss_streak: 2, active: true, created_at: new Date().toISOString() },
+        { id: 1, name: 'Carmen Wu', department: 'Design', mmr: 1200, wins: 0, losses: 0, points_scored: 0, points_conceded: 0, current_win_streak: 0, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
+        { id: 2, name: 'Alex Rivera', department: 'Engineering', mmr: 1200, wins: 0, losses: 0, points_scored: 0, points_conceded: 0, current_win_streak: 0, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
+        { id: 3, name: 'Elena Rostova', department: 'Product', mmr: 1200, wins: 0, losses: 0, points_scored: 0, points_conceded: 0, current_win_streak: 0, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
+        { id: 4, name: 'Marcus Chen', department: 'Sales', mmr: 1200, wins: 0, losses: 0, points_scored: 0, points_conceded: 0, current_win_streak: 0, current_loss_streak: 0, active: true, created_at: new Date().toISOString() },
       ],
       matches: [
         { id: 1, player_a_id: 1, player_b_id: 2, player_a2_id: null, player_b2_id: null, score_a: 11, score_b: 8, mmr_delta_a: 16, mmr_delta_b: -16, mode: '1v1', season: 1, played_at: new Date(Date.now() - 86400000 * 2).toISOString() },
         { id: 2, player_a_id: 3, player_b_id: 4, player_a2_id: null, player_b2_id: null, score_a: 11, score_b: 7, mmr_delta_a: 16, mmr_delta_b: -16, mode: '1v1', season: 1, played_at: new Date(Date.now() - 86400000).toISOString() },
       ],
       seasons: [
-        { id: 1, name: 'Season 1', active: false, started_at: '2026-01-01T00:00:00Z', ended_at: new Date().toISOString() },
-        { id: 2, name: 'Season 2', active: true, started_at: new Date().toISOString(), ended_at: null },
+        { id: 1, name: 'Season 1', active: false, status: 'archived', baseline_mmr: 1200, started_at: '2026-01-01T00:00:00Z', ended_at: new Date().toISOString() },
+        { id: 2, name: 'Season 2', active: true, status: 'active', baseline_mmr: 1200, started_at: new Date().toISOString(), ended_at: null },
       ],
     };
   }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db');
+const { syncActiveSeasonStats } = require('./players');
 
 router.get('/', async (req, res) => {
   try {
@@ -61,6 +62,9 @@ router.post('/reset', async (req, res) => {
     await supabase.from('seasons').update({ status: 'archived', active: false }).neq('id', season);
     await supabase.from('seasons').update({ status: 'active', active: true, baseline_mmr }).eq('id', season);
 
+    // Synchronize active season state to players table
+    await syncActiveSeasonStats();
+
     res.json({ success: true, activeSeason: season, baseline_mmr });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -68,3 +72,4 @@ router.post('/reset', async (req, res) => {
 });
 
 module.exports = router;
+

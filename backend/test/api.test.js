@@ -116,10 +116,10 @@ describe('Full-Stack API Integration Tests', () => {
     const p3 = pRes.body.find(p => p.id === 3);
     const p4 = pRes.body.find(p => p.id === 4);
 
-    assert.strictEqual(p1.wins, 9); // Initial 8 + 1
-    assert.strictEqual(p2.wins, 8); // Initial 7 + 1
-    assert.strictEqual(p3.losses, 6); // Initial 5 + 1
-    assert.strictEqual(p4.losses, 7); // Initial 6 + 1
+    assert.strictEqual(p1.wins, 1); // Season 2: 0 + 1 = 1
+    assert.strictEqual(p2.wins, 1); // Season 2: 0 + 1 = 1
+    assert.strictEqual(p3.losses, 1); // Season 2: 0 + 1 = 1
+    assert.strictEqual(p4.losses, 1); // Season 2: 0 + 1 = 1
   });
 
   it('POST /api/matches rejects 2v2 match with duplicate players', async () => {
@@ -159,6 +159,7 @@ describe('Full-Stack API Integration Tests', () => {
       score_a: 11,
       score_b: 5,
       mode: '2v2',
+      season: 2,
     });
     const matchId = createRes.body.id;
 
@@ -167,9 +168,9 @@ describe('Full-Stack API Integration Tests', () => {
     assert.strictEqual(delRes.status, 200);
     assert.strictEqual(delRes.body.success, true);
 
-    // 3. Verify player 1 returned to original wins (8)
+    // 3. Verify player 1 returned to original Season 2 wins (0)
     const pRes = await makeRequest(server, 'GET', '/api/players/1');
-    assert.strictEqual(pRes.body.wins, 8);
+    assert.strictEqual(pRes.body.wins, 0);
   });
 
   it('Season Lifecycle: Supports Season 1 Archive and Season 2 Reset', async () => {

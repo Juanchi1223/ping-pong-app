@@ -21,8 +21,45 @@ function computeBadges(players) {
   };
 }
 
+async function getActiveSeason() {
+  try {
+    const { data: seasons, error } = await supabase
+      .from('seasons')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (!error && seasons && seasons.length > 0) {
+      const active = seasons.find(s => s.status === 'active' || s.active === true);
+      if (active) return active;
+    }
+  } catch (err) {
+    // Fallback below
+  }
+  return { id: 2, name: 'Season 2', status: 'active', active: true, baseline_mmr: 1200 };
+}
+
+async function getActiveSeasonId() {
+  const active = await getActiveSeason();
+  return Number(active.id) || 2;
+}
+
 async function computeSeasonalRankings(season) {
-  const targetSeason = Number(season) || 2;
+  let targetSeason = season != null ? Number(season) : null;
+  if (targetSeason == null) {
+    targetSeason = await getActiveSeasonId();
+  }
+
+  // Get baseline MMR for the target season
+  let baseline = 1200;
+  try {
+    const { data: sRow } = await supabase.from('seasons').select('*').eq('id', targetSeason).maybeSingle();
+    if (sRow && sRow.baseline_mmr != null) {
+      baseline = Number(sRow.baseline_mmr);
+    }
+  } catch (e) {
+    baseline = 1200;
+  }
+
   const [{ data: players, error: pErr }, { data: allMatches, error: mErr }] = await Promise.all([
     supabase.from('players').select('*').eq('active', true),
     supabase.from('matches').select('*').order('played_at', { ascending: true }),
@@ -39,8 +76,7 @@ async function computeSeasonalRankings(season) {
 
   // Initialize seasonal stats map for all active players
   const playerStats = new Map();
-  const baseline = 1200;
-  for (const p of players) {
+  for (const p of (players || [])) {
     playerStats.set(Number(p.id), {
       ...p,
       id: Number(p.id),
@@ -116,14 +152,28 @@ async function computeSeasonalRankings(season) {
   }));
 }
 
+async function syncActiveSeasonStats() {
+  const activeSeasonId = await getActiveSeasonId();
+  const rankings = await computeSeasonalRankings(activeSeasonId);
+  for (const p of rankings) {
+    await supabase.from('players').update({
+      mmr: p.mmr,
+      wins: p.wins,
+      losses: p.losses,
+      points_scored: p.points_scored,
+      points_conceded: p.points_conceded,
+      current_win_streak: p.current_win_streak,
+      current_loss_streak: p.current_loss_streak,
+    }).eq('id', p.id);
+  }
+}
+
 async function getRankings(season) {
-  // If season query is passed (e.g. 1 or 2), compute seasonal rankings dynamically
   if (season != null) {
     return await computeSeasonalRankings(season);
   }
-
-  // Default to Season 2 (current active season)
-  return await computeSeasonalRankings(2);
+  const activeSeasonId = await getActiveSeasonId();
+  return await computeSeasonalRankings(activeSeasonId);
 }
 
 router.get('/', async (req, res) => {
@@ -135,28 +185,41 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 router.get('/all', async (req, res) => {
-  const { data, error } = await supabase
-    .from('players').select('*').order('mmr', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const { data, error } = await supabase
+      .from('players').select('*').order('name', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const season = req.query.season !== undefined ? Number(req.query.season) : null;
-    if (season != null) {
-      const rankings = await computeSeasonalRankings(season);
-      const player = rankings.find(p => Number(p.id) === Number(req.params.id));
-      if (!player) return res.status(404).json({ error: 'Player not found' });
-      return res.json(player);
+    const isSeasonAll = req.query.season === 'all';
+    if (isSeasonAll) {
+      const { data, error } = await supabase
+        .from('players').select('*').eq('id', req.params.id).maybeSingle();
+      if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: 'Player not found' });
+      return res.json(data);
     }
-    const { data, error } = await supabase
-      .from('players').select('*').eq('id', req.params.id).maybeSingle();
-    if (error) return res.status(500).json({ error: error.message });
-    if (!data) return res.status(404).json({ error: 'Player not found' });
-    res.json(data);
+
+    const targetSeason = req.query.season !== undefined
+      ? Number(req.query.season)
+      : await getActiveSeasonId();
+
+    const rankings = await computeSeasonalRankings(targetSeason);
+    const player = rankings.find(p => Number(p.id) === Number(req.params.id));
+    if (!player) {
+      // Check if player exists in players table (e.g. inactive)
+      const { data: rawPlayer } = await supabase.from('players').select('*').eq('id', req.params.id).maybeSingle();
+      if (!rawPlayer) return res.status(404).json({ error: 'Player not found' });
+      return res.json(rawPlayer);
+    }
+    res.json(player);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -166,9 +229,22 @@ router.post('/', async (req, res) => {
   const { name, department } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
 
+  const activeSeason = await getActiveSeason();
+  const baseline_mmr = activeSeason.baseline_mmr || 1200;
+
   const { data, error } = await supabase
     .from('players')
-    .insert({ name: name.trim(), department: department?.trim() || null })
+    .insert({
+      name: name.trim(),
+      department: department?.trim() || null,
+      mmr: baseline_mmr,
+      wins: 0,
+      losses: 0,
+      points_scored: 0,
+      points_conceded: 0,
+      current_win_streak: 0,
+      current_loss_streak: 0,
+    })
     .select()
     .single();
 
@@ -213,3 +289,8 @@ router.patch('/:id/reactivate', async (req, res) => {
 
 module.exports = router;
 module.exports.getRankings = getRankings;
+module.exports.getActiveSeason = getActiveSeason;
+module.exports.getActiveSeasonId = getActiveSeasonId;
+module.exports.computeSeasonalRankings = computeSeasonalRankings;
+module.exports.syncActiveSeasonStats = syncActiveSeasonStats;
+
